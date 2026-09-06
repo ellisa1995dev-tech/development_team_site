@@ -7,3 +7,4 @@ out/
 .env.local
 .DS_Store
 apps/api/prisma/migrations/dev.db*
+.vercel

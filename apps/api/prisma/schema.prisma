@@ -248,3 +248,20 @@ model SignupSession {
   @@index([completed, lastSeenAt])
   @@map("signup_sessions")
 }
+
+/// Geo-IP lookups cached across serverless cold starts, keyed by a salted hash
+/// of the IP rather than the address itself.
+model GeoCache {
+  ipHash      String   @id @map("ip_hash")
+  country     String?
+  countryCode String?  @map("country_code")
+  region      String?
+  city        String?
+  latitude    Float?
+  longitude   Float?
+  timezone    String?
+  expiresAt   DateTime @map("expires_at")
+
+  @@index([expiresAt])
+  @@map("geo_cache")
+}

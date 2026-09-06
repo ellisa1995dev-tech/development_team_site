@@ -1,6 +1,8 @@
 import { Injectable, Logger } from '@nestjs/common';
+import { createHash } from 'node:crypto';
 import type { Request } from 'express';
 import { isPrivateIp } from './client-ip';
+import { PrismaService } from '../prisma/prisma.service';
 
 export interface GeoLocation {
   country?: string;
@@ -43,9 +45,14 @@ function merge(base: GeoLocation, override: GeoLocation): GeoLocation {
 @Injectable()
 export class GeoIpService {
   private readonly logger = new Logger(GeoIpService.name);
-  private readonly cache = new Map<string, { value: GeoLocation; expires: number }>();
   private readonly ttlMs = 24 * 60 * 60 * 1000;
-  private readonly maxCacheEntries = 5_000;
+
+  constructor(private readonly prisma: PrismaService) {}
+
+  /** Cache key. Hashing keeps raw IPs out of the table, as elsewhere. */
+  private key(ip: string): string {
+    return createHash('sha256').update(`${process.env.IP_HASH_SALT ?? 'dev-salt'}:${ip}`).digest('hex');
+  }
 
   async resolve(ip: string, req?: Request): Promise<GeoLocation> {
     const fromHeaders = req ? this.fromEdgeHeaders(req) : {};
@@ -53,13 +60,45 @@ export class GeoIpService {
 
     if (isPrivateIp(ip)) return merge(this.localFallback(), fromHeaders);
 
-    const cached = this.cache.get(ip);
-    if (cached && cached.expires > Date.now()) return merge(cached.value, fromHeaders);
+    // Persisted, because a serverless cold start wipes any in-process cache
+    // and ip-api.com rate-limits at 45 requests a minute.
+    const ipHash = this.key(ip);
+    const cached = await this.prisma.geoCache
+      .findUnique({ where: { ipHash } })
+      .catch(() => null);
+
+    if (cached && cached.expiresAt > new Date()) {
+      return merge(
+        {
+          country: cached.country ?? undefined,
+          countryCode: cached.countryCode ?? undefined,
+          region: cached.region ?? undefined,
+          city: cached.city ?? undefined,
+          latitude: cached.latitude ?? undefined,
+          longitude: cached.longitude ?? undefined,
+          timezone: cached.timezone ?? undefined,
+        },
+        fromHeaders,
+      );
+    }
 
     const remote = await this.lookupRemote(ip);
     if (remote) {
-      if (this.cache.size >= this.maxCacheEntries) this.cache.clear();
-      this.cache.set(ip, { value: remote, expires: Date.now() + this.ttlMs });
+      const row = {
+        country: remote.country ?? null,
+        countryCode: remote.countryCode ?? null,
+        region: remote.region ?? null,
+        city: remote.city ?? null,
+        latitude: remote.latitude ?? null,
+        longitude: remote.longitude ?? null,
+        timezone: remote.timezone ?? null,
+        expiresAt: new Date(Date.now() + this.ttlMs),
+      };
+      await this.prisma.geoCache
+        .upsert({ where: { ipHash }, create: { ipHash, ...row }, update: row })
+        // A cache write failing must never fail the request it came from.
+        .catch(() => undefined);
+
       return merge(remote, fromHeaders);
     }
 

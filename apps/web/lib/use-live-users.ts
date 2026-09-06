@@ -1,7 +1,7 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
-import { API_URL } from './api';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { apiFetch } from './api';
 import { useAdminAuth } from './admin-auth';
 
 export interface LiveUserStats {
@@ -15,43 +15,67 @@ export interface LiveUserStats {
 
 type Status = 'connecting' | 'live' | 'error';
 
+const POLL_MS = 3000;
+
 /**
- * Subscribes to the server-sent stream of registered-user counters.
+ * Keeps the registered-user counters current.
  *
- * EventSource cannot set an Authorization header, so the admin token goes in
- * the query string — the AdminGuard accepts it there for this route only.
+ * This polls rather than holding a server-sent stream open: the API runs as
+ * serverless functions, where a long-lived connection is billed for its whole
+ * duration and killed at the function timeout. A 3s poll costs a trivial
+ * query and behaves identically from the operator's point of view.
+ *
+ * Polling pauses while the tab is hidden so a backgrounded console stops
+ * hitting the API entirely.
  */
 export function useLiveUsers() {
   const { token } = useAdminAuth();
   const [data, setData] = useState<LiveUserStats | null>(null);
   const [status, setStatus] = useState<Status>('connecting');
-  const sourceRef = useRef<EventSource | null>(null);
+  const inFlight = useRef(false);
+
+  const load = useCallback(async () => {
+    if (!token || inFlight.current) return;
+    inFlight.current = true;
+    try {
+      const next = await apiFetch<LiveUserStats>('/admin/stats/users', { token });
+      setData(next);
+      setStatus('live');
+    } catch {
+      // Keep the last good snapshot on screen; the next tick may recover.
+      setStatus('error');
+    } finally {
+      inFlight.current = false;
+    }
+  }, [token]);
 
   useEffect(() => {
     if (!token) return;
 
-    setStatus('connecting');
-    const url = `${API_URL}/api/admin/stats/users/live?token=${encodeURIComponent(token)}`;
-    const source = new EventSource(url);
-    sourceRef.current = source;
+    let timer: number | undefined;
 
-    source.onmessage = (event) => {
-      try {
-        setData(JSON.parse(event.data) as LiveUserStats);
-        setStatus('live');
-      } catch {
-        /* malformed frame — keep the last good snapshot */
-      }
+    const start = () => {
+      if (timer !== undefined) return;
+      void load();
+      timer = window.setInterval(load, POLL_MS);
     };
 
-    // EventSource reconnects on its own; surface the gap in the meantime.
-    source.onerror = () => setStatus('error');
+    const stop = () => {
+      if (timer === undefined) return;
+      window.clearInterval(timer);
+      timer = undefined;
+    };
+
+    const onVisibility = () => (document.hidden ? stop() : start());
+
+    start();
+    document.addEventListener('visibilitychange', onVisibility);
 
     return () => {
-      source.close();
-      sourceRef.current = null;
+      stop();
+      document.removeEventListener('visibilitychange', onVisibility);
     };
-  }, [token]);
+  }, [token, load]);
 
   return { data, status };
 }

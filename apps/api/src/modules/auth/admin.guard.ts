@@ -10,10 +10,11 @@ export class AdminGuard implements CanActivate {
     const req = context.switchToHttp().getRequest<Request & { admin?: unknown }>();
     const header = req.headers.authorization;
 
-    // EventSource cannot set headers, so the SSE stream passes ?token= instead.
-    const queryToken = typeof req.query?.token === 'string' ? req.query.token : undefined;
-    const token = header?.startsWith('Bearer ') ? header.slice(7) : queryToken;
-    if (!token) throw new UnauthorizedException('Missing bearer token');
+    // Bearer header only. The ?token= escape hatch existed for EventSource,
+    // which is gone now that the live counters poll — and tokens in query
+    // strings leak into access logs.
+    if (!header?.startsWith('Bearer ')) throw new UnauthorizedException('Missing bearer token');
+    const token = header.slice(7);
 
     try {
       req.admin = await this.jwt.verifyAsync(token);

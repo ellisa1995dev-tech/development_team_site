@@ -1,5 +1,4 @@
-import { Controller, Get, Query, UseGuards, ParseIntPipe, DefaultValuePipe, Sse } from '@nestjs/common';
-import { interval, switchMap, startWith, from, map, type Observable } from 'rxjs';
+import { Controller, Get, Query, UseGuards, ParseIntPipe, DefaultValuePipe } from '@nestjs/common';
 import { StatsService } from './stats.service';
 import { AdminGuard } from '../auth/admin.guard';
 
@@ -39,20 +38,6 @@ export class StatsController {
   @Get('users/geo')
   usersGeo() {
     return this.stats.usersGeo();
-  }
-
-  /**
-   * Server-sent stream of the same counters, pushed every 3 seconds, so the
-   * console shows registrations and in-progress sign-ups as they happen.
-   * Authenticated with ?token= because EventSource cannot set headers.
-   */
-  @Sse('users/live')
-  usersLive(): Observable<{ data: string }> {
-    return interval(3000).pipe(
-      startWith(0),
-      switchMap(() => from(this.stats.liveUsers())),
-      map((payload) => ({ data: JSON.stringify(payload) })),
-    );
   }
 
   @Get('pages')

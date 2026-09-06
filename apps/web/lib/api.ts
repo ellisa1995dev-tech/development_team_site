@@ -1,4 +1,15 @@
-export const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000';
+/**
+ * Base URL of the API.
+ *
+ * Set NEXT_PUBLIC_API_URL in Vercel to the deployed API origin — it is inlined
+ * at build time, so changing it needs a redeploy, not just a restart.
+ */
+export const API_URL = (process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000').replace(/\/$/, '');
+
+if (!process.env.NEXT_PUBLIC_API_URL && process.env.NODE_ENV === 'production') {
+  // Loud in the build log rather than a silent site full of failed fetches.
+  console.warn('[api] NEXT_PUBLIC_API_URL is unset — falling back to http://localhost:4000, which will not work once deployed.');
+}
 
 export class ApiError extends Error {
   constructor(
