@@ -33,6 +33,11 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
   }
 
   async onModuleInit() {
+    // On Vercel, connect lazily. Prisma opens a connection on first query
+    // anyway, and eager connecting means one bad DATABASE_URL takes down the
+    // whole function at boot — an opaque FUNCTION_INVOCATION_FAILED — instead
+    // of failing only the routes that touch the database.
+    if (process.env.VERCEL) return;
     await this.$connect();
   }
 
