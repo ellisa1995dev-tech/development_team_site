@@ -42,6 +42,8 @@ No Docker? Point `DATABASE_URL` at any PostgreSQL 14+ instance and run
 | Route       | What it is |
 |-------------|------------|
 | `/`         | Hero, services, active projects, team preview, recruiting callout, order CTA |
+| `/register` | Create a site account (required before ordering or applying) |
+| `/login`    | Sign in to an existing account |
 | `/services` | The four practices, engagement models, how an engagement runs |
 | `/team`     | All eight profiles, team history, delivered projects |
 | `/order`    | Project order form → `POST /api/orders` |
@@ -68,6 +70,28 @@ and projects ([content.ts](apps/web/lib/content.ts)) rather than rendering empty
 
 ---
 
+## Registration gate
+
+Ordering a project and applying to join the team both require a registered
+account. The rule is enforced in two places:
+
+- **Server** — `POST /api/orders` and `POST /api/applications` sit behind
+  `UserGuard`, which rejects anonymous requests with `401 Please register.`
+  Admin tokens are rejected too: the two audiences are deliberately separate.
+- **Client** — both forms call `requireRegistration()` before validating. With
+  no account it raises the **"Please register."** alert and stops. A banner
+  above the form and the submit label ("Register to send") make the requirement
+  visible before the visitor gets that far.
+
+Every gated action confirms itself with an alert: registration complete, signed
+in, signed out, brief submitted, application submitted, and a matching alert on
+each failure.
+
+Accounts are stored in `users` with a bcrypt hash and a coarse location
+resolved once at sign-up — that location is what the admin user map plots.
+
+---
+
 ## Admin console (`/admin`)
 
 JWT login, then:
@@ -75,12 +99,38 @@ JWT login, then:
 - **Overview** — visits, unique visitors, countries, active projects, new orders and
   applications at a glance.
 - **Visitors & map** — see below.
+- **Registered users** — live counters and a map of where accounts are, see below.
 - **Projects** — active work with names, status, live progress slider, assigned engineers.
 - **Orders** — every ordered task, expandable, status workflow `NEW → REVIEWING →
   QUOTED → ACCEPTED / DECLINED / ARCHIVED`.
 - **Applications** — developers applying to join, their years of experience flagged
   against the 7-year bar, and their idea pitches highlighted.
 - **Team** — add, activate/deactivate and remove members; shows current assignments.
+
+### Live registered-user counters
+
+`/admin/users` streams four counters over Server-Sent Events, pushed every
+3 seconds — no polling, no refresh:
+
+| Counter | Meaning |
+|---|---|
+| Registered users | Total accounts |
+| **Signing up now** | People with the registration form open right now |
+| Online now | Registered users active in the last 5 minutes |
+| Registered today | Accounts created since midnight |
+
+"Signing up now" is real, not inferred: the registration form pings
+`POST /api/users/signup-activity` every 30s while it is open, and fires
+`signup-abandon` on `pagehide` if the visitor leaves without finishing.
+Completing registration marks the session done. "Online now" comes from a
+60-second heartbeat sent while a user is signed in.
+
+`EventSource` cannot set an `Authorization` header, so the stream authenticates
+with `?token=` — `AdminGuard` accepts a query token in addition to the bearer
+header. Unauthenticated stream requests get a 401.
+
+The same page maps registered users, sized by how many accounts are at each
+location, with the same circle/bar marker toggle as the visitor map.
 
 ### Visitor tracking and the map
 
@@ -110,8 +160,12 @@ grouped server-side at ~1km precision so nearby lookups collapse into one marker
 
 ## API
 
-Public: `GET /api/members`, `GET /api/projects`, `POST /api/orders`,
-`POST /api/applications`, `POST /api/visits/track`.
+Public: `GET /api/members`, `GET /api/projects`, `POST /api/visits/track`,
+`POST /api/users/register`, `POST /api/users/login`,
+`POST /api/users/signup-activity`, `POST /api/users/signup-abandon`.
+
+Registered users only (Bearer user token): `POST /api/orders`,
+`POST /api/applications`, `GET /api/users/me`, `POST /api/users/heartbeat`.
 
 Admin (Bearer token): `/api/auth/login`, `/api/auth/me`, full CRUD under
 `/api/admin/{members,projects,orders,applications}`, and
@@ -125,7 +179,9 @@ the whole API sits behind a 60 req/min throttle.
 ## Data model
 
 `TeamMember`, `Project`, `ProjectAssignment` (join table with per-project role),
-`ProjectOrder`, `JoinApplication`, `Visit`, `AdminUser`. Full schema in
+`ProjectOrder`, `JoinApplication`, `Visit`, `AdminUser`, `User` (site accounts)
+and `SignupSession` (ephemeral sign-up presence). Orders and applications carry
+an optional `userId` back to the account that submitted them. Full schema in
 [schema.prisma](apps/api/prisma/schema.prisma).
 
 Analytics uses raw SQL for the aggregations Prisma can't express — geo grouping with

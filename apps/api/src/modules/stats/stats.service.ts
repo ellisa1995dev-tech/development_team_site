@@ -1,6 +1,26 @@
 import { Injectable } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
+import { UsersService } from '../users/users.service';
+
+export interface UserGeoPoint {
+  city: string | null;
+  region: string | null;
+  country: string | null;
+  countryCode: string | null;
+  latitude: number;
+  longitude: number;
+  users: number;
+}
+
+export interface LiveUserStats {
+  registeredTotal: number;
+  registeredToday: number;
+  onlineNow: number;
+  signingUpNow: number;
+  recentSignups: Array<{ id: string; fullName: string; city: string | null; country: string | null; createdAt: Date }>;
+  at: string;
+}
 
 export interface GeoPoint {
   city: string | null;
@@ -114,6 +134,75 @@ export class StatsService {
     }));
   }
 
+  /** The counters the admin console streams live. */
+  async liveUsers(): Promise<LiveUserStats> {
+    const startOfToday = new Date();
+    startOfToday.setHours(0, 0, 0, 0);
+
+    const [registeredTotal, registeredToday, onlineNow, signingUpNow, recentSignups] = await Promise.all([
+      this.prisma.user.count(),
+      this.prisma.user.count({ where: { createdAt: { gte: startOfToday } } }),
+      this.prisma.user.count({ where: { lastSeenAt: { gte: UsersService.onlineCutoff() } } }),
+      this.prisma.signupSession.count({
+        where: { completed: false, lastSeenAt: { gte: UsersService.signupCutoff() } },
+      }),
+      this.prisma.user.findMany({
+        orderBy: { createdAt: 'desc' },
+        take: 8,
+        select: { id: true, fullName: true, city: true, country: true, createdAt: true },
+      }),
+    ]);
+
+    return {
+      registeredTotal,
+      registeredToday,
+      onlineNow,
+      signingUpNow,
+      recentSignups,
+      at: new Date().toISOString(),
+    };
+  }
+
+  /** One marker per location, sized by how many registered users are there. */
+  async usersGeo(): Promise<UserGeoPoint[]> {
+    const rows = await this.prisma.$queryRaw<
+      Array<{
+        city: string | null;
+        region: string | null;
+        country: string | null;
+        country_code: string | null;
+        latitude: number;
+        longitude: number;
+        users: bigint;
+      }>
+    >(Prisma.sql`
+      SELECT
+        city,
+        region,
+        country,
+        country_code,
+        ROUND(latitude::numeric, 2)::float8  AS latitude,
+        ROUND(longitude::numeric, 2)::float8 AS longitude,
+        COUNT(*) AS users
+      FROM users
+      WHERE latitude IS NOT NULL AND longitude IS NOT NULL
+      GROUP BY city, region, country, country_code,
+               ROUND(latitude::numeric, 2), ROUND(longitude::numeric, 2)
+      ORDER BY users DESC
+      LIMIT 500
+    `);
+
+    return rows.map((r) => ({
+      city: r.city,
+      region: r.region,
+      country: r.country,
+      countryCode: r.country_code,
+      latitude: r.latitude,
+      longitude: r.longitude,
+      users: Number(r.users),
+    }));
+  }
+
   async topPages(days: number) {
     const rows = await this.prisma.visit.groupBy({
       by: ['path'],
@@ -150,6 +239,8 @@ export class StatsService {
       newApplications,
       totalApplications,
       activeMembers,
+      registeredUsers,
+      onlineUsers,
     ] = await Promise.all([
       this.prisma.visit.count(),
       this.prisma.visit.count({ where: { createdAt: { gte: since } } }),
@@ -170,6 +261,8 @@ export class StatsService {
       this.prisma.joinApplication.count({ where: { status: 'NEW' } }),
       this.prisma.joinApplication.count(),
       this.prisma.teamMember.count({ where: { active: true } }),
+      this.prisma.user.count(),
+      this.prisma.user.count({ where: { lastSeenAt: { gte: UsersService.onlineCutoff() } } }),
     ]);
 
     return {
@@ -179,6 +272,7 @@ export class StatsService {
       orders: { new: newOrders, total: totalOrders },
       applications: { new: newApplications, total: totalApplications },
       team: { active: activeMembers },
+      users: { registered: registeredUsers, onlineNow: onlineUsers },
     };
   }
 }

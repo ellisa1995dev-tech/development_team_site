@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
+import { useUserAuth } from '@/lib/user-auth';
 
 const NAV = [
   { href: '/services', label: 'Services' },
@@ -15,6 +16,7 @@ export default function SiteHeader() {
   const [open, setOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const pathname = usePathname();
+  const { ready, isRegistered, user, logout } = useUserAuth();
 
   // Close the drawer on navigation so a tap never leaves it hanging open.
   useEffect(() => setOpen(false), [pathname]);
@@ -67,7 +69,26 @@ export default function SiteHeader() {
           })}
         </nav>
 
-        <div className="hidden md:block">
+        <div className="hidden items-center gap-2 md:flex">
+          {ready && isRegistered ? (
+            <>
+              <span className="max-w-[10rem] truncate text-sm text-ink-500" title={user?.email}>
+                {user?.fullName}
+              </span>
+              <button type="button" onClick={logout} className="btn-outline px-3">
+                Sign out
+              </button>
+            </>
+          ) : (
+            <>
+              <Link href="/login" className="rounded-lg px-3 py-2 text-sm font-medium text-ink-600 hover:bg-ink-50">
+                Sign in
+              </Link>
+              <Link href="/register" className="btn-outline px-4">
+                Register
+              </Link>
+            </>
+          )}
           <Link href="/order" className="btn-primary">
             Start a project
           </Link>
@@ -109,6 +130,27 @@ export default function SiteHeader() {
               {item.label}
             </Link>
           ))}
+          <div className="mt-2 border-t border-ink-100 pt-3">
+            {ready && isRegistered ? (
+              <>
+                <p className="px-3 pb-2 text-sm text-ink-500">
+                  Signed in as <span className="font-semibold text-ink">{user?.fullName}</span>
+                </p>
+                <button type="button" onClick={logout} className="btn-outline w-full">
+                  Sign out
+                </button>
+              </>
+            ) : (
+              <div className="flex flex-col gap-2">
+                <Link href="/register" className="btn-outline w-full">
+                  Register
+                </Link>
+                <Link href="/login" className="rounded-xl px-3 py-3 text-center text-base font-medium text-ink-700 hover:bg-ink-50">
+                  Sign in
+                </Link>
+              </div>
+            )}
+          </div>
           <Link href="/order" className="btn-primary mt-2 w-full">
             Start a project
           </Link>

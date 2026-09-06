@@ -2,6 +2,8 @@
 
 import { useState } from 'react';
 import { apiFetch } from '@/lib/api';
+import { useUserAuth } from '@/lib/user-auth';
+import RegistrationGate from './RegistrationGate';
 import { STACK_OPTIONS, ROLE_LABEL } from '@/lib/content';
 import type { ApplicationPosition } from '@/lib/types';
 
@@ -32,6 +34,7 @@ const EMPTY: FormState = {
 };
 
 export default function JoinForm() {
+  const { token, isRegistered, requireRegistration } = useUserAuth();
   const [form, setForm] = useState<FormState>(EMPTY);
   const [stack, setStack] = useState<string[]>([]);
   const [errors, setErrors] = useState<Partial<Record<keyof FormState, string>>>({});
@@ -73,12 +76,17 @@ export default function JoinForm() {
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     setServerError(null);
+
+    // Registration gate: alert and stop if there is no account.
+    if (!requireRegistration('applying to join the team')) return;
+
     if (!validate()) return;
 
     setSubmitting(true);
     try {
       await apiFetch('/applications', {
         method: 'POST',
+        token: token ?? undefined,
         body: JSON.stringify({
           fullName: form.fullName.trim(),
           email: form.email.trim(),
@@ -92,11 +100,14 @@ export default function JoinForm() {
           ideaPitch: form.ideaPitch.trim() || undefined,
         }),
       });
+      window.alert('Your application has been submitted.');
       setDone(true);
       setForm(EMPTY);
       setStack([]);
     } catch (err) {
-      setServerError(err instanceof Error ? err.message : 'Something went wrong. Please try again.');
+      const message = err instanceof Error ? err.message : 'Something went wrong. Please try again.';
+      setServerError(message);
+      window.alert('Could not submit your application. ' + message);
     } finally {
       setSubmitting(false);
     }
@@ -124,6 +135,8 @@ export default function JoinForm() {
 
   return (
     <form onSubmit={onSubmit} noValidate className="card space-y-6">
+      <RegistrationGate action="applying to join the team" />
+
       <div className="grid gap-4 sm:grid-cols-2">
         <div>
           <label className="label" htmlFor="fullName">
@@ -294,7 +307,7 @@ export default function JoinForm() {
       <div className="flex flex-col gap-3 border-t border-ink-100 pt-5 sm:flex-row sm:items-center sm:justify-between">
         <p className="text-xs text-ink-400">Every application gets a reply.</p>
         <button type="submit" className="btn-sky w-full sm:w-auto" disabled={submitting}>
-          {submitting ? 'Sending…' : 'Submit application'}
+          {submitting ? 'Sending…' : isRegistered ? 'Submit application' : 'Register to apply'}
         </button>
       </div>
     </form>

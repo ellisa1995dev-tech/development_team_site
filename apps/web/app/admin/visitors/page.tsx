@@ -4,7 +4,7 @@ import dynamic from 'next/dynamic';
 import { useMemo, useState } from 'react';
 import { useAdminData } from '@/lib/use-admin-data';
 import type { GeoPoint } from '@/lib/types';
-import type { MarkerMode } from '@/components/admin/VisitorMap';
+import type { MarkerMode, MapPoint } from '@/components/admin/VisitorMap';
 
 // Leaflet touches `window` at import time, so it must never run on the server.
 const VisitorMap = dynamic(() => import('@/components/admin/VisitorMap'), {
@@ -55,6 +55,18 @@ export default function VisitorsPage() {
   const devices = useAdminData<DeviceRow[]>(`/admin/stats/devices?days=${days}`);
 
   const points = geo.data ?? [];
+
+  const mapPoints: MapPoint[] = useMemo(
+    () =>
+      points.map((p) => ({
+        latitude: p.latitude,
+        longitude: p.longitude,
+        label: [p.city, p.region, p.country].filter(Boolean).join(', ') || 'Unknown location',
+        value: metric === 'visits' ? p.visits : p.uniqueVisitors,
+        detail: [`${p.visits.toLocaleString()} visits`, `${p.uniqueVisitors.toLocaleString()} unique visitors`],
+      })),
+    [points, metric],
+  );
   const totals = useMemo(
     () => ({
       visits: points.reduce((s, p) => s + p.visits, 0),
@@ -171,7 +183,7 @@ export default function VisitorsPage() {
             No located visits in this window yet. Browse the public site and they will appear here.
           </div>
         ) : (
-          <VisitorMap points={points} mode={mode} metric={metric} />
+          <VisitorMap points={mapPoints} mode={mode} />
         )}
 
         <p className="mt-3 text-xs text-ink-400">

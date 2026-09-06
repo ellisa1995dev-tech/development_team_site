@@ -2,6 +2,8 @@
 
 import { useState } from 'react';
 import { apiFetch } from '@/lib/api';
+import { useUserAuth } from '@/lib/user-auth';
+import RegistrationGate from './RegistrationGate';
 import { PROJECT_TYPES, BUDGET_RANGES, TIMELINES, STACK_OPTIONS } from '@/lib/content';
 
 interface FormState {
@@ -27,6 +29,7 @@ const EMPTY: FormState = {
 };
 
 export default function OrderForm() {
+  const { token, isRegistered, requireRegistration } = useUserAuth();
   const [form, setForm] = useState<FormState>(EMPTY);
   const [stack, setStack] = useState<string[]>([]);
   const [errors, setErrors] = useState<Partial<Record<keyof FormState, string>>>({});
@@ -55,12 +58,17 @@ export default function OrderForm() {
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     setServerError(null);
+
+    // Registration gate: alert and stop if there is no account.
+    if (!requireRegistration('ordering a project')) return;
+
     if (!validate()) return;
 
     setSubmitting(true);
     try {
       await apiFetch('/orders', {
         method: 'POST',
+        token: token ?? undefined,
         body: JSON.stringify({
           companyName: form.companyName.trim() || undefined,
           contactName: form.contactName.trim(),
@@ -73,11 +81,14 @@ export default function OrderForm() {
           description: form.description.trim(),
         }),
       });
+      window.alert('Your project brief has been submitted.');
       setDone(true);
       setForm(EMPTY);
       setStack([]);
     } catch (err) {
-      setServerError(err instanceof Error ? err.message : 'Something went wrong. Please try again.');
+      const message = err instanceof Error ? err.message : 'Something went wrong. Please try again.';
+      setServerError(message);
+      window.alert('Could not submit your order. ' + message);
     } finally {
       setSubmitting(false);
     }
@@ -105,6 +116,8 @@ export default function OrderForm() {
 
   return (
     <form onSubmit={onSubmit} noValidate className="card space-y-6">
+      <RegistrationGate action="ordering a project" />
+
       <div className="grid gap-4 sm:grid-cols-2">
         <div>
           <label className="label" htmlFor="contactName">
@@ -252,7 +265,7 @@ export default function OrderForm() {
       <div className="flex flex-col gap-3 border-t border-ink-100 pt-5 sm:flex-row sm:items-center sm:justify-between">
         <p className="text-xs text-ink-400">We reply within two working days. No sales sequence.</p>
         <button type="submit" className="btn-primary w-full sm:w-auto" disabled={submitting}>
-          {submitting ? 'Sending…' : 'Send the brief'}
+          {submitting ? 'Sending…' : isRegistered ? 'Send the brief' : 'Register to send'}
         </button>
       </div>
     </form>

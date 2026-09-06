@@ -66,7 +66,7 @@ export default function AdminOverview() {
         />
       </div>
 
-      <div className="grid gap-3 sm:grid-cols-2 sm:gap-4">
+      <div className="grid gap-3 sm:grid-cols-3 sm:gap-4">
         <Tile
           value={s ? `${s.applications.new}` : '—'}
           label="New applications"
@@ -74,6 +74,12 @@ export default function AdminOverview() {
           accent="ink"
         />
         <Tile value={s ? `${s.team.active}` : '—'} label="Active team members" accent="ink" />
+        <Tile
+          value={s ? s.users.registered.toLocaleString() : '—'}
+          label="Registered users"
+          hint={s ? `${s.users.onlineNow} online now` : undefined}
+          accent="grass"
+        />
       </div>
 
       <section className="rounded-2xl border border-ink-100 bg-white">

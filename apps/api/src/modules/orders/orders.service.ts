@@ -7,8 +7,8 @@ import { CreateOrderDto, UpdateOrderDto } from './orders.dto';
 export class OrdersService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async create(dto: CreateOrderDto) {
-    const order = await this.prisma.projectOrder.create({ data: dto });
+  async create(dto: CreateOrderDto, userId: string) {
+    const order = await this.prisma.projectOrder.create({ data: { ...dto, userId } });
     // Only echo back what the sender already knows.
     return { id: order.id, createdAt: order.createdAt };
   }
@@ -17,6 +17,7 @@ export class OrdersService {
     return this.prisma.projectOrder.findMany({
       where: status ? { status } : undefined,
       orderBy: { createdAt: 'desc' },
+      include: { user: { select: { id: true, fullName: true, email: true, company: true } } },
     });
   }
 

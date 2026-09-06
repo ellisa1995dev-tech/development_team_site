@@ -9,6 +9,7 @@ import AdminLogin from './AdminLogin';
 const NAV = [
   { href: '/admin', label: 'Overview', exact: true },
   { href: '/admin/visitors', label: 'Visitors & map' },
+  { href: '/admin/users', label: 'Registered users' },
   { href: '/admin/projects', label: 'Projects' },
   { href: '/admin/orders', label: 'Orders' },
   { href: '/admin/applications', label: 'Applications' },

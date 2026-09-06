@@ -1,17 +1,20 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post, Query, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Patch, Post, Query, Req, UseGuards } from '@nestjs/common';
+import type { Request } from 'express';
 import { ApplicationStatus } from '@prisma/client';
 import { ApplicationsService } from './applications.service';
 import { CreateApplicationDto, UpdateApplicationDto } from './applications.dto';
 import { AdminGuard } from '../auth/admin.guard';
+import { UserGuard, type UserTokenPayload } from '../users/user.guard';
 
 @Controller('applications')
 export class ApplicationsPublicController {
   constructor(private readonly applications: ApplicationsService) {}
 
-  /** Public: the "join the team" form posts here. */
+  /** Requires a registered account — the guard rejects anonymous posts. */
   @Post()
-  create(@Body() dto: CreateApplicationDto) {
-    return this.applications.create(dto);
+  @UseGuards(UserGuard)
+  create(@Body() dto: CreateApplicationDto, @Req() req: Request & { user?: UserTokenPayload }) {
+    return this.applications.create(dto, req.user!.sub);
   }
 }
 

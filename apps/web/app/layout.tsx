@@ -4,6 +4,7 @@ import './globals.css';
 import SiteHeader from '@/components/SiteHeader';
 import SiteFooter from '@/components/SiteFooter';
 import VisitTracker from '@/components/VisitTracker';
+import { UserAuthProvider } from '@/lib/user-auth';
 
 export const metadata: Metadata = {
   metadataBase: new URL('https://eightengineers.example'),
@@ -41,11 +42,13 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           Skip to content
         </a>
 
-        <SiteHeader />
-        <main id="main" className="flex-1">
-          {children}
-        </main>
-        <SiteFooter />
+        <UserAuthProvider>
+          <SiteHeader />
+          <main id="main" className="flex-1">
+            {children}
+          </main>
+          <SiteFooter />
+        </UserAuthProvider>
 
         <Suspense fallback={null}>
           <VisitTracker />

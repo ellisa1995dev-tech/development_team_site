@@ -1,17 +1,20 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post, Query, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Patch, Post, Query, Req, UseGuards } from '@nestjs/common';
+import type { Request } from 'express';
 import { OrderStatus } from '@prisma/client';
 import { OrdersService } from './orders.service';
 import { CreateOrderDto, UpdateOrderDto } from './orders.dto';
 import { AdminGuard } from '../auth/admin.guard';
+import { UserGuard, type UserTokenPayload } from '../users/user.guard';
 
 @Controller('orders')
 export class OrdersPublicController {
   constructor(private readonly orders: OrdersService) {}
 
-  /** Public: the "order a project" form posts here. */
+  /** Requires a registered account — the guard rejects anonymous posts. */
   @Post()
-  create(@Body() dto: CreateOrderDto) {
-    return this.orders.create(dto);
+  @UseGuards(UserGuard)
+  create(@Body() dto: CreateOrderDto, @Req() req: Request & { user?: UserTokenPayload }) {
+    return this.orders.create(dto, req.user!.sub);
   }
 }
 

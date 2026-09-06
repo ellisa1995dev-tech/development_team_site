@@ -7,8 +7,8 @@ import { CreateApplicationDto, UpdateApplicationDto } from './applications.dto';
 export class ApplicationsService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async create(dto: CreateApplicationDto) {
-    const app = await this.prisma.joinApplication.create({ data: dto });
+  async create(dto: CreateApplicationDto, userId: string) {
+    const app = await this.prisma.joinApplication.create({ data: { ...dto, userId } });
     return { id: app.id, createdAt: app.createdAt };
   }
 
@@ -16,6 +16,7 @@ export class ApplicationsService {
     return this.prisma.joinApplication.findMany({
       where: status ? { status } : undefined,
       orderBy: { createdAt: 'desc' },
+      include: { user: { select: { id: true, fullName: true, email: true } } },
     });
   }
 

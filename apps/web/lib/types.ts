@@ -93,4 +93,5 @@ export interface StatsSummary {
   orders: { new: number; total: number };
   applications: { new: number; total: number };
   team: { active: number };
+  users: { registered: number; onlineNow: number };
 }

@@ -20,22 +20,22 @@ enum MemberRole {
 }
 
 model TeamMember {
-  id             String     @id @default(cuid())
-  name           String
-  title          String // "Principal Backend Engineer"
-  role           MemberRole
-  yearsExperience Int       @map("years_experience")
-  bio            String
-  focus          String // one-line specialty shown on the card
-  skills         String[]   @default([])
-  location       String?
-  avatarUrl      String?    @map("avatar_url")
-  githubUrl      String?    @map("github_url")
-  linkedinUrl    String?    @map("linkedin_url")
-  active         Boolean    @default(true)
-  sortOrder      Int        @default(0) @map("sort_order")
-  createdAt      DateTime   @default(now()) @map("created_at")
-  updatedAt      DateTime   @updatedAt @map("updated_at")
+  id              String     @id @default(cuid())
+  name            String
+  title           String // "Principal Backend Engineer"
+  role            MemberRole
+  yearsExperience Int        @map("years_experience")
+  bio             String
+  focus           String // one-line specialty shown on the card
+  skills          String[]   @default([])
+  location        String?
+  avatarUrl       String?    @map("avatar_url")
+  githubUrl       String?    @map("github_url")
+  linkedinUrl     String?    @map("linkedin_url")
+  active          Boolean    @default(true)
+  sortOrder       Int        @default(0) @map("sort_order")
+  createdAt       DateTime   @default(now()) @map("created_at")
+  updatedAt       DateTime   @updatedAt @map("updated_at")
 
   assignments ProjectAssignment[]
 
@@ -112,6 +112,8 @@ model ProjectOrder {
   description   String
   status        OrderStatus @default(NEW)
   internalNotes String?     @map("internal_notes")
+  userId        String?     @map("user_id")
+  user          User?       @relation(fields: [userId], references: [id], onDelete: SetNull)
   createdAt     DateTime    @default(now()) @map("created_at")
   updatedAt     DateTime    @updatedAt @map("updated_at")
 
@@ -152,6 +154,8 @@ model JoinApplication {
   ideaPitch       String?             @map("idea_pitch") // "tell us your innovative idea"
   status          ApplicationStatus   @default(NEW)
   internalNotes   String?             @map("internal_notes")
+  userId          String?             @map("user_id")
+  user            User?               @relation(fields: [userId], references: [id], onDelete: SetNull)
   createdAt       DateTime            @default(now()) @map("created_at")
   updatedAt       DateTime            @updatedAt @map("updated_at")
 
@@ -194,4 +198,53 @@ model AdminUser {
   createdAt    DateTime @default(now()) @map("created_at")
 
   @@map("admin_users")
+}
+
+// ---------------------------------------------------------------- site users
+
+/// A member of the public who has registered on the site. Registering is a
+/// precondition for ordering a project or applying to join the team.
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String   @map("password_hash")
+  fullName     String   @map("full_name")
+  company      String?
+  // Coarse location captured once at registration, used for the admin map.
+  country      String?
+  countryCode  String?  @map("country_code")
+  region       String?
+  city         String?
+  latitude     Float?
+  longitude    Float?
+  lastSeenAt   DateTime @default(now()) @map("last_seen_at")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  orders       ProjectOrder[]
+  applications JoinApplication[]
+
+  @@index([createdAt])
+  @@index([lastSeenAt])
+  @@index([countryCode])
+  @@map("users")
+}
+
+/// Anonymous presence record for someone part-way through the sign-up form.
+/// Rows are short-lived: the admin "signing up now" counter reads the ones
+/// still fresh, and completed or stale rows are swept away.
+model SignupSession {
+  id          String   @id @default(cuid())
+  sessionId   String   @unique @map("session_id")
+  completed   Boolean  @default(false)
+  country     String?
+  countryCode String?  @map("country_code")
+  city        String?
+  latitude    Float?
+  longitude   Float?
+  startedAt   DateTime @default(now()) @map("started_at")
+  lastSeenAt  DateTime @default(now()) @map("last_seen_at")
+
+  @@index([completed, lastSeenAt])
+  @@map("signup_sessions")
 }
