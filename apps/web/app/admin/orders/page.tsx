@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useAdminData, useAdminMutation } from '@/lib/use-admin-data';
 import type { ProjectOrder, OrderStatus } from '@/lib/types';
 import { StatusBadge } from '@/components/ui';
+import AttachmentList from '@/components/admin/AttachmentList';
 
 const STATUSES: OrderStatus[] = ['NEW', 'REVIEWING', 'QUOTED', 'ACCEPTED', 'DECLINED', 'ARCHIVED'];
 
@@ -78,6 +79,11 @@ export default function AdminOrdersPage() {
                   <div className="flex flex-wrap items-center gap-2">
                     <h2 className="text-base font-semibold">{order.companyName || order.contactName}</h2>
                     <StatusBadge status={order.status} />
+                    {order.attachments?.length ? (
+                      <span className="chip-sky">
+                        {order.attachments.length} document{order.attachments.length > 1 ? 's' : ''}
+                      </span>
+                    ) : null}
                   </div>
                   <p className="mt-1 text-sm text-ink-500">
                     {order.projectType} · {order.budgetRange} · {order.timeline}
@@ -115,8 +121,15 @@ export default function AdminOrdersPage() {
                       ))}
                     </ul>
                   ) : null}
-                  <p className="whitespace-pre-wrap text-sm leading-relaxed text-ink-600">{order.description}</p>
-                  {order.phone ? <p className="mt-3 text-xs text-ink-400">Phone: {order.phone}</p> : null}
+                  <p className="whitespace-pre-wrap text-sm leading-relaxed text-muted">{order.description}</p>
+                  {order.phone ? <p className="mt-3 text-xs text-faint">Phone: {order.phone}</p> : null}
+
+                  <div className="mt-4 border-t pt-4 border-theme">
+                    <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-faint">
+                      Requirements document
+                    </h3>
+                    <AttachmentList orderId={order.id} attachments={order.attachments ?? []} />
+                  </div>
                   <a href={`mailto:${order.email}`} className="btn-outline mt-4">
                     Reply by email
                   </a>

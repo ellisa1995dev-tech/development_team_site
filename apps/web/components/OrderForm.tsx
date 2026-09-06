@@ -1,10 +1,13 @@
 'use client';
 
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { apiFetch } from '@/lib/api';
 import { useUserAuth } from '@/lib/user-auth';
 import { useToast } from '@/components/Toast';
 import RegistrationGate from './RegistrationGate';
+
+/** Mirrors MAX_UPLOAD_BYTES in the API; Vercel caps a request body at 4.5 MB. */
+const MAX_UPLOAD_BYTES = 4 * 1024 * 1024;
 import { PROJECT_TYPES, BUDGET_RANGES, TIMELINES, STACK_OPTIONS } from '@/lib/content';
 
 interface FormState {
@@ -34,6 +37,9 @@ export default function OrderForm() {
   const toast = useToast();
   const [form, setForm] = useState<FormState>(EMPTY);
   const [stack, setStack] = useState<string[]>([]);
+  const [docFile, setDocFile] = useState<File | null>(null);
+  const [fileError, setFileError] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [errors, setErrors] = useState<Partial<Record<keyof FormState, string>>>({});
   const [submitting, setSubmitting] = useState(false);
   const [serverError, setServerError] = useState<string | null>(null);
@@ -68,25 +74,26 @@ export default function OrderForm() {
 
     setSubmitting(true);
     try {
-      await apiFetch('/orders', {
-        method: 'POST',
-        token: token ?? undefined,
-        body: JSON.stringify({
-          companyName: form.companyName.trim() || undefined,
-          contactName: form.contactName.trim(),
-          email: form.email.trim(),
-          phone: form.phone.trim() || undefined,
-          projectType: form.projectType,
-          stack,
-          budgetRange: form.budgetRange,
-          timeline: form.timeline,
-          description: form.description.trim(),
-        }),
-      });
+      const body = new FormData();
+      if (form.companyName.trim()) body.append('companyName', form.companyName.trim());
+      body.append('contactName', form.contactName.trim());
+      body.append('email', form.email.trim());
+      if (form.phone.trim()) body.append('phone', form.phone.trim());
+      body.append('projectType', form.projectType);
+      // Flat form fields cannot carry an array, so the API parses this back.
+      body.append('stack', JSON.stringify(stack));
+      body.append('budgetRange', form.budgetRange);
+      body.append('timeline', form.timeline);
+      body.append('description', form.description.trim());
+      if (docFile) body.append('document', docFile);
+
+      await apiFetch('/orders', { method: 'POST', token: token ?? undefined, body });
       toast.success('Brief received', 'An engineer will read it and reply within two working days.');
       setDone(true);
       setForm(EMPTY);
       setStack([]);
+      setDocFile(null);
+      if (fileInputRef.current) fileInputRef.current.value = '';
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Something went wrong. Please try again.';
       setServerError(message);
@@ -256,6 +263,54 @@ export default function OrderForm() {
             {errors.description}
           </p>
         ) : null}
+      </div>
+
+      <div>
+        <label className="label" htmlFor="document">
+          Requirements document <span className="text-faint">(optional)</span>
+        </label>
+        <p className="mb-2 text-xs text-faint">
+          PDF, Word, ODT, text, Markdown, CSV, Excel or an image. Up to 4 MB.
+        </p>
+
+        <input
+          ref={fileInputRef}
+          id="document"
+          type="file"
+          accept=".pdf,.doc,.docx,.odt,.txt,.md,.csv,.xls,.xlsx,.png,.jpg,.jpeg,.webp,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.oasis.opendocument.text,text/plain,text/markdown,text/csv,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,image/png,image/jpeg,image/webp"
+          onChange={(e) => {
+            const picked = e.target.files?.[0] ?? null;
+            setFileError(null);
+            if (picked && picked.size > MAX_UPLOAD_BYTES) {
+              setFileError(`That file is ${(picked.size / 1024 / 1024).toFixed(1)} MB. The maximum is 4 MB.`);
+              setDocFile(null);
+              e.target.value = '';
+              return;
+            }
+            setDocFile(picked);
+          }}
+          className="block w-full cursor-pointer rounded-xl border px-3.5 py-2.5 text-sm transition file:mr-3 file:cursor-pointer file:rounded-lg file:border-0 file:bg-grass-500 file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-white hover:file:bg-grass-600"
+          style={{ borderColor: 'var(--border-strong)', background: 'var(--bg-surface)', color: 'var(--fg)' }}
+        />
+
+        {docFile ? (
+          <p className="mt-2 flex items-center gap-2 text-xs text-muted">
+            <span className="chip-grass">{(docFile.size / 1024).toFixed(0)} KB</span>
+            <span className="truncate">{docFile.name}</span>
+            <button
+              type="button"
+              onClick={() => {
+                setDocFile(null);
+                if (fileInputRef.current) fileInputRef.current.value = '';
+              }}
+              className="ml-auto shrink-0 font-medium text-red-600 underline underline-offset-2"
+            >
+              Remove
+            </button>
+          </p>
+        ) : null}
+
+        {fileError ? <p className="field-error">{fileError}</p> : null}
       </div>
 
       {serverError ? (

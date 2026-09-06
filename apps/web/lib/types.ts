@@ -42,6 +42,14 @@ export interface Project {
   }>;
 }
 
+export interface OrderAttachment {
+  id: string;
+  filename: string;
+  mimeType: string;
+  sizeBytes: number;
+  uploadedAt: string;
+}
+
 export interface ProjectOrder {
   id: string;
   companyName?: string | null;
@@ -56,6 +64,8 @@ export interface ProjectOrder {
   status: OrderStatus;
   internalNotes?: string | null;
   createdAt: string;
+  attachments?: OrderAttachment[];
+  user?: { id: string; fullName: string; email: string; company?: string | null } | null;
 }
 
 export interface JoinApplication {

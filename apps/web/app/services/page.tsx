@@ -82,7 +82,7 @@ export default function ServicesPage() {
         </div>
       </section>
 
-      <section className="section bg-ink-50">
+      <section className="section surface-subtle">
         <div className="container-page">
           <SectionHeading eyebrow="Engagement" title="Three ways to work with us" />
           <div className="mt-10 grid gap-4 sm:grid-cols-3 sm:gap-5">

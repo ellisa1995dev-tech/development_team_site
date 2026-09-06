@@ -163,7 +163,7 @@ export default async function HomePage() {
       </section>
 
       {/* ---------------------------------------------------------- work */}
-      <section id="work" className="section relative overflow-hidden bg-ink-50">
+      <section id="work" className="section surface-subtle relative overflow-hidden">
         <div className="hairline absolute inset-x-0 top-0" aria-hidden="true" />
         <div className="container-page">
           <Reveal>

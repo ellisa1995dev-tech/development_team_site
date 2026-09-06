@@ -71,6 +71,12 @@ including the "bring us an innovative idea" pitch box.
   animated hamburger, and a scroll-progress hairline in the header. Every one is
   disabled under `prefers-reduced-motion`, and the scroll-reveal components skip
   straight to visible rather than staying hidden.
+- **Background colour:** visitors pick white (default), black, or any custom
+  colour from the header swatch. The whole token set — surfaces, text, borders —
+  is derived from that one colour by luminance, so text stays readable on
+  anything. Stored in `localStorage` and applied by an inline script in
+  `<head>` before first paint, so there is no flash on reload.
+  See [theme.tsx](apps/web/lib/theme.tsx) and [ThemePicker.tsx](apps/web/components/ThemePicker.tsx).
 - **Notifications:** there are no `window.alert` calls. Feedback goes through a
   toast system ([Toast.tsx](apps/web/components/Toast.tsx)) — four variants,
   stacked, auto-dismissing with a time-remaining bar, animated in and out, and
@@ -83,6 +89,29 @@ including the "bring us an innovative idea" pitch box.
 
 If the API is unreachable the public pages fall back to static copies of the roster
 and projects ([content.ts](apps/web/lib/content.ts)) rather than rendering empty.
+
+---
+
+## Requirements documents
+
+Clients can attach a requirements document to a project order — PDF, Word, ODT,
+text, Markdown, CSV, Excel or an image, up to **4 MB**. Vercel caps a serverless
+request body at 4.5 MB, so that ceiling is a platform limit, not a preference.
+
+Bytes are stored in Postgres (`order_attachments`) rather than object storage:
+it keeps the deployment to two services, and files this small do not justify a
+third. The blob lives in its own table so listing orders never drags it along —
+list responses carry filename, type and size only.
+
+In the console, attachments **view inline** (PDFs and images open in a tab) or
+**download**. Both go through `fetch` with the admin bearer token and a blob
+URL, because a plain `<a href>` cannot send an Authorization header and putting
+a token in a query string would leak it into access logs.
+
+Uploads are validated twice — MIME allow-list and size on the client for fast
+feedback, and again on the server, which is the check that counts. Filenames are
+stripped of path components, quotes and control characters before they reach a
+`Content-Disposition` header.
 
 ---
 
@@ -116,12 +145,18 @@ JWT login, then:
   applications at a glance.
 - **Visitors & map** — see below.
 - **Registered users** — live counters and a map of where accounts are, see below.
-- **Projects** — active work with names, status, live progress slider, assigned engineers.
+- **Projects** — sortable table with search across name, domain, stack and
+  assigned engineer. Inline status and progress editing; a status change offers
+  **Undo** in the toast, and the wheel is blocked over the controls so scrolling
+  the table cannot silently rewrite a row.
 - **Orders** — every ordered task, expandable, status workflow `NEW → REVIEWING →
-  QUOTED → ACCEPTED / DECLINED / ARCHIVED`.
+  QUOTED → ACCEPTED / DECLINED / ARCHIVED`, plus any **requirements document**
+  the client attached (view inline or download).
 - **Applications** — developers applying to join, their years of experience flagged
   against the 7-year bar, and their idea pitches highlighted.
-- **Team** — add, activate/deactivate and remove members; shows current assignments.
+- **Team** — sortable table with search across name, role, title, skills and
+  location, plus a role filter. Add, activate/deactivate and remove members;
+  years below the 7-year bar are flagged amber.
 
 ### Live registered-user counters
 

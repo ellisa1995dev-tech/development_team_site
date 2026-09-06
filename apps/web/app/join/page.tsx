@@ -89,7 +89,7 @@ export default function JoinPage() {
       </section>
 
       {/* ------------------------------------------------------- open roles */}
-      <section id="roles" className="section bg-ink-50 pt-0 sm:pt-0">
+      <section id="roles" className="section surface-subtle pt-0 sm:pt-0">
         <div className="container-page pt-16 sm:pt-20">
           <SectionHeading
             eyebrow="Open roles"

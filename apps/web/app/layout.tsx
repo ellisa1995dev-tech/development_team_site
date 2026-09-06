@@ -6,6 +6,8 @@ import SiteFooter from '@/components/SiteFooter';
 import VisitTracker from '@/components/VisitTracker';
 import { UserAuthProvider } from '@/lib/user-auth';
 import { ToastProvider } from '@/components/Toast';
+import { ThemeProvider } from '@/lib/theme';
+import ThemeScript from './theme-script';
 
 export const metadata: Metadata = {
   metadataBase: new URL('https://stackforge.example'),
@@ -34,7 +36,10 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
+      <head>
+        <ThemeScript />
+      </head>
       <body className="flex min-h-screen flex-col">
         <a
           href="#main"
@@ -43,6 +48,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           Skip to content
         </a>
 
+        <ThemeProvider>
         <ToastProvider>
           <UserAuthProvider>
             <SiteHeader />
@@ -52,6 +58,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             <SiteFooter />
           </UserAuthProvider>
         </ToastProvider>
+        </ThemeProvider>
 
         <Suspense fallback={null}>
           <VisitTracker />

@@ -35,7 +35,7 @@ export function StatTile({
   accent?: 'grass' | 'sky';
 }) {
   return (
-    <div className="rounded-2xl border border-ink-100 bg-white p-4 transition-all duration-500 ease-out-expo hover:-translate-y-1 hover:border-grass-200 hover:shadow-card sm:p-5">
+    <div className="surface rounded-2xl p-4 transition-all duration-500 ease-out-expo hover:-translate-y-1 hover:border-grass-200 hover:shadow-card sm:p-5">
       <div
         className={`text-2xl font-semibold tracking-tight sm:text-3xl ${
           accent === 'sky' ? 'text-sky-600' : 'text-grass-600'
@@ -116,7 +116,7 @@ export function PageHero({
   }
 
   return (
-    <section className="relative overflow-hidden border-b border-ink-100 bg-gradient-to-b from-ink-50 to-white">
+    <section className="relative overflow-hidden border-b border-theme surface-subtle">
       <div
         className="pointer-events-none absolute -right-24 -top-24 h-80 w-80 animate-float rounded-full bg-grass-100/50 blur-3xl"
         aria-hidden="true"

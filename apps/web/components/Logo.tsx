@@ -30,7 +30,9 @@ export default function Logo({ size = 26, withWordmark = true, tone = 'dark', cl
       {withWordmark ? (
         <span
           className={`text-[0.95rem] font-semibold tracking-tight sm:text-base ${
-            tone === 'light' ? 'text-white' : 'text-ink'
+            // 'light' is for permanently dark surfaces (the footer). Otherwise
+            // follow the theme foreground so it stays readable on any colour.
+            tone === 'light' ? 'text-white' : 'text-body'
           }`}
         >
           Stack<span className="text-sky-500">Forge</span>

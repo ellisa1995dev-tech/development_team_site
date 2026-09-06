@@ -35,14 +35,14 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
     item.exact ? pathname === item.href : pathname.startsWith(item.href);
 
   return (
-    <div className="bg-ink-50">
-      <div className="border-b border-ink-100 bg-white">
+    <div className="surface-subtle">
+      <div className="border-b border-theme" style={{ background: 'var(--bg-page)' }}>
         <div className="container-page flex h-14 items-center justify-between gap-3">
           <div className="flex items-center gap-3">
             <button
               type="button"
               onClick={() => setNavOpen((v) => !v)}
-              className="grid h-10 w-10 place-items-center rounded-lg border border-ink-200 lg:hidden"
+              className="grid h-10 w-10 place-items-center rounded-lg border border-theme text-body lg:hidden"
               aria-expanded={navOpen}
               aria-controls="admin-nav"
               aria-label="Toggle console navigation"
@@ -51,12 +51,12 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
                 <path d="M3 6h14M3 10h14M3 14h14" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
               </svg>
             </button>
-            <span className="text-sm font-semibold">Admin console</span>
+            <span className="text-sm font-semibold text-body">Admin console</span>
           </div>
 
           <div className="flex items-center gap-3">
-            <span className="hidden text-xs text-ink-400 sm:inline">{user?.email}</span>
-            <button type="button" onClick={logout} className="rounded-lg px-3 py-1.5 text-sm font-medium text-ink-600 hover:bg-ink-50">
+            <span className="hidden text-xs text-faint sm:inline">{user?.email}</span>
+            <button type="button" onClick={logout} className="rounded-lg px-3 py-1.5 text-sm font-medium text-muted hover:text-body">
               Sign out
             </button>
           </div>
@@ -69,14 +69,14 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
           className={`${navOpen ? 'block' : 'hidden'} lg:block lg:w-56 lg:shrink-0`}
           aria-label="Console"
         >
-          <ul className="flex flex-col gap-1 rounded-2xl border border-ink-100 bg-white p-2 lg:sticky lg:top-6">
+          <ul className="surface flex flex-col gap-1 rounded-2xl p-2 lg:sticky lg:top-6">
             {NAV.map((item) => (
               <li key={item.href}>
                 <Link
                   href={item.href}
                   onClick={() => setNavOpen(false)}
                   className={`block rounded-xl px-3 py-2.5 text-sm font-medium transition ${
-                    isActive(item) ? 'bg-grass-50 text-grass-700' : 'text-ink-600 hover:bg-ink-50'
+                    isActive(item) ? 'bg-grass-50 text-grass-700' : 'text-muted hover:text-body'
                   }`}
                 >
                   {item.label}
@@ -84,7 +84,7 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
               </li>
             ))}
             <li className="mt-1 border-t border-ink-100 pt-1">
-              <Link href="/" className="block rounded-xl px-3 py-2.5 text-sm font-medium text-ink-400 hover:bg-ink-50">
+              <Link href="/" className="block rounded-xl px-3 py-2.5 text-sm font-medium text-faint hover:text-body">
                 ← Back to site
               </Link>
             </li>

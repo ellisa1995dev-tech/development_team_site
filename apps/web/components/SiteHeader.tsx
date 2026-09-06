@@ -5,6 +5,7 @@ import { usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { useUserAuth } from '@/lib/user-auth';
 import Logo from './Logo';
+import ThemePicker from './ThemePicker';
 
 const NAV = [
   { href: '/services', label: 'Services' },
@@ -47,8 +48,13 @@ export default function SiteHeader() {
   return (
     <header
       className={`sticky top-0 z-50 border-b transition-all duration-500 ease-out-expo ${
-        scrolled ? 'border-ink-100/80 bg-white/80 shadow-[0_1px_20px_-8px_rgba(10,13,12,0.18)] backdrop-blur-xl' : 'border-transparent bg-white'
+        scrolled ? 'shadow-[0_1px_20px_-8px_rgba(10,13,12,0.18)] backdrop-blur-xl' : ''
       }`}
+      style={{
+        // color-mix keeps the blur visible while still following the theme.
+        background: scrolled ? 'color-mix(in srgb, var(--bg-page) 82%, transparent)' : 'var(--bg-page)',
+        borderColor: scrolled ? 'var(--border)' : 'transparent',
+      }}
     >
       {/* Reading-progress hairline. */}
       <span
@@ -70,7 +76,7 @@ export default function SiteHeader() {
                 key={item.href}
                 href={item.href}
                 className={`link-underline rounded-lg px-3 py-2 text-sm font-medium transition-colors duration-300 ${
-                  active ? 'text-grass-700' : 'text-ink-600 hover:text-ink'
+                  active ? 'text-grass-700' : 'text-muted hover:text-body'
                 }`}
               >
                 {item.label}
@@ -83,10 +89,11 @@ export default function SiteHeader() {
         </nav>
 
         <div className="hidden items-center gap-2 md:flex">
+          <ThemePicker />
           {ready && isRegistered ? (
             <>
               <span
-                className="max-w-[9rem] animate-fade-in truncate rounded-lg bg-ink-50 px-2.5 py-1.5 text-xs font-medium text-ink-600"
+                className="max-w-[9rem] animate-fade-in truncate rounded-lg surface-subtle px-2.5 py-1.5 text-xs font-medium text-muted"
                 title={user?.email}
               >
                 {user?.fullName}
@@ -99,7 +106,7 @@ export default function SiteHeader() {
             <>
               <Link
                 href="/login"
-                className="rounded-lg px-3 py-2 text-sm font-medium text-ink-600 transition-colors duration-300 hover:text-ink"
+                className="rounded-lg px-3 py-2 text-sm font-medium text-muted transition-colors duration-300 hover:text-body"
               >
                 Sign in
               </Link>
@@ -113,10 +120,12 @@ export default function SiteHeader() {
           </Link>
         </div>
 
+        <div className="flex items-center gap-2 md:hidden">
+          <ThemePicker />
         <button
           type="button"
           onClick={() => setOpen((v) => !v)}
-          className="grid h-11 w-11 place-items-center rounded-xl border border-ink-200 text-ink transition-all duration-300 hover:border-grass-300 hover:text-grass-700 active:scale-95 md:hidden"
+          className="grid h-11 w-11 place-items-center rounded-xl border text-body transition-all duration-300 hover:border-grass-300 hover:text-grass-700 active:scale-95 md:hidden border-theme"
           aria-expanded={open}
           aria-controls="mobile-nav"
           aria-label={open ? 'Close menu' : 'Open menu'}
@@ -140,14 +149,16 @@ export default function SiteHeader() {
             />
           </span>
         </button>
+        </div>
       </div>
 
       {/* Mobile drawer */}
       <div
         id="mobile-nav"
-        className={`overflow-hidden border-ink-100 bg-white/95 backdrop-blur-xl transition-all duration-500 ease-out-expo md:hidden ${
+        className={`overflow-hidden backdrop-blur-xl transition-all duration-500 ease-out-expo md:hidden border-theme ${
           open ? 'max-h-[32rem] border-t opacity-100' : 'max-h-0 border-t-0 opacity-0'
         }`}
+        style={{ background: 'color-mix(in srgb, var(--bg-page) 95%, transparent)' }}
       >
         <nav className="container-page flex flex-col gap-1 py-3" aria-label="Mobile">
           {NAV.map((item, i) => (
@@ -157,17 +168,17 @@ export default function SiteHeader() {
               style={{ transitionDelay: open ? `${60 + i * 45}ms` : '0ms' }}
               className={`translate-y-0 rounded-xl px-3 py-3 text-base font-medium transition-all duration-500 ease-out-expo ${
                 open ? 'translate-y-0 opacity-100' : '-translate-y-2 opacity-0'
-              } ${pathname === item.href ? 'bg-grass-50 text-grass-700' : 'text-ink-700 hover:bg-ink-50'}`}
+              } ${pathname === item.href ? 'bg-grass-50 text-grass-700' : 'text-body hover:opacity-70'}`}
             >
               {item.label}
             </Link>
           ))}
 
-          <div className="mt-2 border-t border-ink-100 pt-3">
+          <div className="mt-2 border-t pt-3 border-theme">
             {ready && isRegistered ? (
               <>
-                <p className="px-3 pb-2 text-sm text-ink-500">
-                  Signed in as <span className="font-semibold text-ink">{user?.fullName}</span>
+                <p className="px-3 pb-2 text-sm text-muted">
+                  Signed in as <span className="font-semibold text-body">{user?.fullName}</span>
                 </p>
                 <button type="button" onClick={logout} className="btn-outline w-full">
                   Sign out
@@ -180,7 +191,7 @@ export default function SiteHeader() {
                 </Link>
                 <Link
                   href="/login"
-                  className="rounded-xl px-3 py-3 text-center text-base font-medium text-ink-700 transition hover:bg-ink-50"
+                  className="rounded-xl px-3 py-3 text-center text-base font-medium text-body transition hover:opacity-70"
                 >
                   Sign in
                 </Link>

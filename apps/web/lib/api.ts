@@ -28,10 +28,14 @@ interface RequestOptions extends RequestInit {
 export async function apiFetch<T>(path: string, options: RequestOptions = {}): Promise<T> {
   const { token, headers, ...rest } = options;
 
+  // The browser must set Content-Type itself for FormData so the multipart
+  // boundary is included; forcing application/json would corrupt the upload.
+  const isFormData = typeof FormData !== 'undefined' && rest.body instanceof FormData;
+
   const res = await fetch(`${API_URL}/api${path}`, {
     ...rest,
     headers: {
-      'Content-Type': 'application/json',
+      ...(isFormData ? {} : { 'Content-Type': 'application/json' }),
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
       ...headers,
     },

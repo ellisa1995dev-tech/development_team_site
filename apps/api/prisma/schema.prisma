@@ -2,7 +2,7 @@
 // Postgres 16 + Prisma 6
 
 generator client {
-  provider = "prisma-client-js"
+  provider      = "prisma-client-js"
   // "native" for local dev; the rhel target is what Vercel's Lambda
   // runtime needs — without it Prisma cannot find its query engine.
   binaryTargets = ["native", "rhel-openssl-3.0.x"]
@@ -103,22 +103,23 @@ enum OrderStatus {
 }
 
 model ProjectOrder {
-  id            String      @id @default(cuid())
-  companyName   String?     @map("company_name")
-  contactName   String      @map("contact_name")
+  id            String            @id @default(cuid())
+  companyName   String?           @map("company_name")
+  contactName   String            @map("contact_name")
   email         String
   phone         String?
-  projectType   String      @map("project_type") // "AI / ML", "Web platform", ...
-  stack         String[]    @default([])
-  budgetRange   String      @map("budget_range")
+  projectType   String            @map("project_type") // "AI / ML", "Web platform", ...
+  stack         String[]          @default([])
+  budgetRange   String            @map("budget_range")
   timeline      String
   description   String
-  status        OrderStatus @default(NEW)
-  internalNotes String?     @map("internal_notes")
-  userId        String?     @map("user_id")
-  user          User?       @relation(fields: [userId], references: [id], onDelete: SetNull)
-  createdAt     DateTime    @default(now()) @map("created_at")
-  updatedAt     DateTime    @updatedAt @map("updated_at")
+  status        OrderStatus       @default(NEW)
+  internalNotes String?           @map("internal_notes")
+  userId        String?           @map("user_id")
+  user          User?             @relation(fields: [userId], references: [id], onDelete: SetNull)
+  attachments   OrderAttachment[]
+  createdAt     DateTime          @default(now()) @map("created_at")
+  updatedAt     DateTime          @updatedAt @map("updated_at")
 
   @@index([status, createdAt])
   @@map("project_orders")
@@ -267,4 +268,25 @@ model GeoCache {
 
   @@index([expiresAt])
   @@map("geo_cache")
+}
+
+/// A requirements document attached to a project order.
+///
+/// Bytes live in Postgres rather than object storage: it keeps the deployment
+/// to two services, and Vercel caps a serverless request body at 4.5 MB
+/// anyway, so these are small by construction. Stored in its own table so
+/// listing orders never drags the blobs along.
+model OrderAttachment {
+  id         String   @id @default(cuid())
+  orderId    String   @map("order_id")
+  filename   String
+  mimeType   String   @map("mime_type")
+  sizeBytes  Int      @map("size_bytes")
+  data       Bytes
+  uploadedAt DateTime @default(now()) @map("uploaded_at")
+
+  order ProjectOrder @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([orderId])
+  @@map("order_attachments")
 }
