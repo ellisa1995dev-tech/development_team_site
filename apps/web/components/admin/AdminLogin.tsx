@@ -2,10 +2,12 @@
 
 import { useState } from 'react';
 import { useAdminAuth } from '@/lib/admin-auth';
+import { useToast } from '@/components/Toast';
 import Logo from '../Logo';
 
 export default function AdminLogin() {
   const { login } = useAdminAuth();
+  const toast = useToast();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -15,10 +17,18 @@ export default function AdminLogin() {
     e.preventDefault();
     setError(null);
     setBusy(true);
+    const pending = toast.loading('Signing in…', 'Checking your credentials.');
     try {
       await login(email.trim(), password);
+      toast.update(pending, {
+        title: 'Signed in',
+        description: 'Welcome back to the admin console.',
+        variant: 'success',
+      });
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Sign in failed.');
+      const message = err instanceof Error ? err.message : 'Sign in failed.';
+      setError(message);
+      toast.update(pending, { title: 'Sign in failed', description: message, variant: 'error' });
     } finally {
       setBusy(false);
     }

@@ -5,6 +5,7 @@ import { useAdminData, useAdminMutation } from '@/lib/use-admin-data';
 import type { ProjectOrder, OrderStatus } from '@/lib/types';
 import { StatusBadge } from '@/components/ui';
 import AttachmentList from '@/components/admin/AttachmentList';
+import { useToast } from '@/components/Toast';
 
 const STATUSES: OrderStatus[] = ['NEW', 'REVIEWING', 'QUOTED', 'ACCEPTED', 'DECLINED', 'ARCHIVED'];
 
@@ -19,10 +20,35 @@ export default function AdminOrdersPage() {
     filter === 'ALL' ? '/admin/orders' : `/admin/orders?status=${filter}`,
   );
   const { mutate, busy } = useAdminMutation();
+  const toast = useToast();
 
-  async function setStatus(id: string, status: OrderStatus) {
-    await mutate(`/admin/orders/${id}`, 'PATCH', { status });
-    reload();
+  async function setStatus(order: ProjectOrder, status: OrderStatus, isUndo = false) {
+    const previous = order.status;
+    if (status === previous) return;
+    const who = order.companyName || order.contactName;
+
+    try {
+      await mutate(`/admin/orders/${order.id}`, 'PATCH', { status });
+      reload();
+
+      if (isUndo) {
+        toast.info('Reverted', `${who} is back to ${status.toLowerCase()}.`);
+        return;
+      }
+
+      toast.toast({
+        title: 'Order updated',
+        description: `${who} → ${status.toLowerCase()}`,
+        variant: 'success',
+        duration: 8000,
+        action: {
+          label: `Undo (back to ${previous.toLowerCase()})`,
+          onClick: () => setStatus({ ...order, status }, previous, true),
+        },
+      });
+    } catch (err) {
+      toast.error('Could not update the order', err instanceof Error ? err.message : undefined);
+    }
   }
 
   const orders = data ?? [];
@@ -99,7 +125,8 @@ export default function AdminOrdersPage() {
                     className="input py-2 text-sm"
                     value={order.status}
                     disabled={busy}
-                    onChange={(e) => setStatus(order.id, e.target.value as OrderStatus)}
+                    onWheel={(e) => e.currentTarget.blur()}
+                    onChange={(e) => setStatus(order, e.target.value as OrderStatus)}
                   >
                     {STATUSES.map((s) => (
                       <option key={s} value={s}>
