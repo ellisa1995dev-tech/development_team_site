@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { TEAM_FACTS } from '@/lib/content';
 import Logo from './Logo';
+import WhatsAppLink from './WhatsAppLink';
 
 export default function SiteFooter() {
   return (
@@ -13,6 +14,13 @@ export default function SiteFooter() {
               {TEAM_FACTS.headcount} senior engineers, {TEAM_FACTS.yearsTogether} years building together, and AI in
               production since {TEAM_FACTS.aiSince}. Rust, Next.js and NestJS.
             </p>
+
+            <div className="mt-6">
+              <h2 className="text-xs font-semibold uppercase tracking-[0.14em] text-ink-400">Talk to us</h2>
+              <div className="mt-3">
+                <WhatsAppLink variant="footer" message="Hi StackForge - I found you through the site and would like to talk." />
+              </div>
+            </div>
           </div>
 
           <div>

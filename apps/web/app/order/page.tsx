@@ -3,6 +3,8 @@ import OrderForm from '@/components/OrderForm';
 import { ENGAGEMENT_MODELS } from '@/lib/content';
 import { PageHero } from '@/components/ui';
 import Reveal from '@/components/Reveal';
+import WhatsAppLink from '@/components/WhatsAppLink';
+import { CONTACT } from '@/lib/content';
 
 export const metadata: Metadata = {
   title: 'Order a project',
@@ -56,6 +58,18 @@ export default function OrderPage() {
                   </li>
                 ))}
               </ul>
+            </div>
+
+            <div className="card card-hover">
+              <h2 className="heading-3">Rather just talk?</h2>
+              <p className="mt-2 text-sm leading-relaxed text-muted">
+                {CONTACT.whatsappOwner}, our {CONTACT.whatsappRole}, takes scoping questions directly on WhatsApp.
+                Usually a faster route than a form for anything exploratory.
+              </p>
+              <WhatsAppLink
+                className="mt-4 w-full"
+                message="Hi StackForge - I have a project I would like to scope."
+              />
             </div>
 
             <div className="rounded-2xl border border-sky-200 bg-sky-50 p-5">
