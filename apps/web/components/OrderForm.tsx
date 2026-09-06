@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { apiFetch } from '@/lib/api';
 import { useUserAuth } from '@/lib/user-auth';
+import { useToast } from '@/components/Toast';
 import RegistrationGate from './RegistrationGate';
 import { PROJECT_TYPES, BUDGET_RANGES, TIMELINES, STACK_OPTIONS } from '@/lib/content';
 
@@ -30,6 +31,7 @@ const EMPTY: FormState = {
 
 export default function OrderForm() {
   const { token, isRegistered, requireRegistration } = useUserAuth();
+  const toast = useToast();
   const [form, setForm] = useState<FormState>(EMPTY);
   const [stack, setStack] = useState<string[]>([]);
   const [errors, setErrors] = useState<Partial<Record<keyof FormState, string>>>({});
@@ -81,14 +83,14 @@ export default function OrderForm() {
           description: form.description.trim(),
         }),
       });
-      window.alert('Your project brief has been submitted.');
+      toast.success('Brief received', 'An engineer will read it and reply within two working days.');
       setDone(true);
       setForm(EMPTY);
       setStack([]);
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Something went wrong. Please try again.';
       setServerError(message);
-      window.alert('Could not submit your order. ' + message);
+      toast.error('Could not send your brief', message);
     } finally {
       setSubmitting(false);
     }

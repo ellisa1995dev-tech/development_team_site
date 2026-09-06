@@ -23,6 +23,23 @@ export interface GeoLocation {
  * Swap `lookupRemote` for a local MaxMind GeoLite2 reader in production if you
  * would rather not send visitor IPs to a third party.
  */
+/**
+ * Overlays `override` onto `base`, ignoring keys whose value is undefined.
+ *
+ * A plain object spread would not do: fromEdgeHeaders() always returns every
+ * key, so spreading it over a good result silently erased it whenever the
+ * request carried no edge headers.
+ */
+function merge(base: GeoLocation, override: GeoLocation): GeoLocation {
+  const out: GeoLocation = { ...base };
+  for (const [key, value] of Object.entries(override)) {
+    if (value !== undefined && value !== null && value !== '') {
+      (out as Record<string, unknown>)[key] = value;
+    }
+  }
+  return out;
+}
+
 @Injectable()
 export class GeoIpService {
   private readonly logger = new Logger(GeoIpService.name);
@@ -34,16 +51,16 @@ export class GeoIpService {
     const fromHeaders = req ? this.fromEdgeHeaders(req) : {};
     if (fromHeaders.latitude != null && fromHeaders.longitude != null) return fromHeaders;
 
-    if (isPrivateIp(ip)) return { ...this.localFallback(), ...fromHeaders };
+    if (isPrivateIp(ip)) return merge(this.localFallback(), fromHeaders);
 
     const cached = this.cache.get(ip);
-    if (cached && cached.expires > Date.now()) return { ...cached.value, ...fromHeaders };
+    if (cached && cached.expires > Date.now()) return merge(cached.value, fromHeaders);
 
     const remote = await this.lookupRemote(ip);
     if (remote) {
       if (this.cache.size >= this.maxCacheEntries) this.cache.clear();
       this.cache.set(ip, { value: remote, expires: Date.now() + this.ttlMs });
-      return { ...remote, ...fromHeaders };
+      return merge(remote, fromHeaders);
     }
 
     return fromHeaders;
@@ -74,16 +91,31 @@ export class GeoIpService {
     };
   }
 
-  /** Local dev has no routable IP; pin a placeholder so the map is not empty. */
+  /**
+   * Local dev has no routable IP, so there is nothing real to resolve.
+   *
+   * Set GEOIP_DEV_LATLNG (e.g. "35.6762,139.6503") to pin a placeholder so the
+   * admin map has something to draw while developing. Unset, we return no
+   * coordinates rather than inventing them - an empty map is honest, and a
+   * marker at 0,0 in the Gulf of Guinea is not.
+   */
   private localFallback(): GeoLocation {
+    const raw = process.env.GEOIP_DEV_LATLNG;
+    if (!raw) return {};
+
+    const [lat, lon] = raw.split(',').map((v) => Number(v.trim()));
+    if (!Number.isFinite(lat) || !Number.isFinite(lon)) {
+      this.logger.warn(`GEOIP_DEV_LATLNG is not a valid "lat,lng" pair: ${raw}`);
+      return {};
+    }
+
     return {
-      country: 'Local',
-      countryCode: 'LO',
-      region: 'Localhost',
-      city: 'Localhost',
-      latitude: 0,
-      longitude: 0,
-      timezone: 'UTC',
+      country: process.env.GEOIP_DEV_COUNTRY || 'Local development',
+      countryCode: process.env.GEOIP_DEV_COUNTRY_CODE || 'LO',
+      region: process.env.GEOIP_DEV_REGION || undefined,
+      city: process.env.GEOIP_DEV_CITY || 'Local development',
+      latitude: lat,
+      longitude: lon,
     };
   }
 

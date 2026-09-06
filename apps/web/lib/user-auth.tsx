@@ -2,6 +2,7 @@
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { apiFetch } from './api';
+import { useToast } from '@/components/Toast';
 
 const TOKEN_KEY = 'te_user_token';
 
@@ -59,6 +60,7 @@ export function UserAuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<SiteUser | null>(null);
   const [ready, setReady] = useState(false);
   const tokenRef = useRef<string | null>(null);
+  const { warning, info } = useToast();
 
   tokenRef.current = token;
 
@@ -120,16 +122,16 @@ export function UserAuthProvider({ children }: { children: React.ReactNode }) {
     writeToken(null);
     setToken(null);
     setUser(null);
-    window.alert('You have been signed out.');
-  }, []);
+    info('Signed out', 'You can sign back in at any time.');
+  }, [info]);
 
   const requireRegistration = useCallback(
     (action: string) => {
       if (tokenRef.current) return true;
-      window.alert(`Please register.\n\nYou need a registered account before ${action}.`);
+      warning('Please register.', `You need a registered account before ${action}.`);
       return false;
     },
-    [],
+    [warning],
   );
 
   const value = useMemo(

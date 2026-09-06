@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { apiFetch } from '@/lib/api';
 import { useUserAuth } from '@/lib/user-auth';
+import { useToast } from '@/components/Toast';
 import RegistrationGate from './RegistrationGate';
 import { STACK_OPTIONS, ROLE_LABEL } from '@/lib/content';
 import type { ApplicationPosition } from '@/lib/types';
@@ -35,6 +36,7 @@ const EMPTY: FormState = {
 
 export default function JoinForm() {
   const { token, isRegistered, requireRegistration } = useUserAuth();
+  const toast = useToast();
   const [form, setForm] = useState<FormState>(EMPTY);
   const [stack, setStack] = useState<string[]>([]);
   const [errors, setErrors] = useState<Partial<Record<keyof FormState, string>>>({});
@@ -100,14 +102,14 @@ export default function JoinForm() {
           ideaPitch: form.ideaPitch.trim() || undefined,
         }),
       });
-      window.alert('Your application has been submitted.');
+      toast.success('Application received', 'The CTO reads every application personally. You will hear back either way.');
       setDone(true);
       setForm(EMPTY);
       setStack([]);
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Something went wrong. Please try again.';
       setServerError(message);
-      window.alert('Could not submit your application. ' + message);
+      toast.error('Could not send your application', message);
     } finally {
       setSubmitting(false);
     }

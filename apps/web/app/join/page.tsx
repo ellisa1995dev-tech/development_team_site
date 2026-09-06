@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import JoinForm from '@/components/JoinForm';
 import { OPEN_ROLES, TEAM_FACTS } from '@/lib/content';
 import { SectionHeading } from '@/components/ui';
+import Reveal from '@/components/Reveal';
 
 export const metadata: Metadata = {
   title: 'Join the team',
@@ -15,33 +16,35 @@ export default function JoinPage() {
       {/* -------------------------------------------------- recruiting hero */}
       <section className="relative overflow-hidden bg-ink text-white">
         <div
-          className="pointer-events-none absolute inset-0"
-          style={{
-            background:
-              'radial-gradient(52rem 28rem at 85% -10%, rgba(0,165,236,0.35), transparent 62%), radial-gradient(44rem 26rem at 5% 20%, rgba(58,148,72,0.32), transparent 60%)',
-          }}
+          className="pointer-events-none absolute -right-1/4 -top-1/3 h-[46rem] w-[46rem] animate-aurora rounded-full blur-[110px]"
+          style={{ background: 'radial-gradient(circle, rgba(0,165,236,0.85), rgba(0,165,236,0.25) 45%, transparent 70%)' }}
+          aria-hidden="true"
+        />
+        <div
+          className="pointer-events-none absolute -left-1/4 top-1/4 h-[40rem] w-[40rem] animate-aurora rounded-full blur-[110px] [animation-delay:-8s]"
+          style={{ background: 'radial-gradient(circle, rgba(58,148,72,0.7), transparent 68%)' }}
           aria-hidden="true"
         />
         <div className="container-page relative py-16 sm:py-24">
-          <p className="eyebrow text-sky-400">
+          <p className="eyebrow animate-fade-up text-sky-400">
             <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-sky-400" aria-hidden="true" />
             Recruiting now
           </p>
-          <h1 className="heading-1 mt-4 max-w-3xl text-white">
+          <h1 className="heading-1 mt-5 max-w-3xl animate-fade-up text-white delay-75">
             We are looking for people with <span className="text-sky-400">innovative ideas</span> — and engineers to
             build them.
           </h1>
-          <p className="lede mt-6 max-w-2xl text-ink-200">
+          <p className="lede mt-7 max-w-2xl animate-fade-up text-ink-200 delay-150">
             {TEAM_FACTS.headcount} of us today, and we are expanding. Two doors in: apply to an open role if you have
             seven or more years of depth, or pitch an idea you want a senior team to take seriously. Both go to the same
             place, and the CTO reads every one.
           </p>
 
-          <div className="mt-9 flex flex-col gap-3 sm:flex-row">
+          <div className="mt-10 flex animate-fade-up flex-col gap-3 delay-225 sm:flex-row">
             <a href="#roles" className="btn-primary w-full sm:w-auto">
               Open roles
             </a>
-            <a href="#apply" className="btn w-full border border-white/25 bg-white/5 text-white hover:bg-white/10 sm:w-auto">
+            <a href="#apply" className="btn-ghost-light w-full sm:w-auto">
               Go to the form
             </a>
           </div>
@@ -95,8 +98,9 @@ export default function JoinPage() {
           />
 
           <div className="mt-10 grid gap-4 sm:grid-cols-2 sm:gap-5">
-            {OPEN_ROLES.map((role) => (
-              <article key={role.title} className="card card-hover flex h-full flex-col">
+            {OPEN_ROLES.map((role, i) => (
+              <Reveal key={role.title} delay={(i % 2) * 90}>
+              <article className="card card-hover card-glow flex h-full flex-col">
                 <div className="flex items-start justify-between gap-3">
                   <h3 className="heading-3">{role.title}</h3>
                   <span className="chip-grass shrink-0">{role.level}</span>
@@ -114,6 +118,7 @@ export default function JoinPage() {
                   Apply for this role
                 </a>
               </article>
+              </Reveal>
             ))}
           </div>
         </div>

@@ -75,9 +75,15 @@ export default function VisitorMap({ points, mode, heightClass = 'h-[22rem] sm:h
       className={`w-full rounded-2xl ${heightClass}`}
       style={{ background: '#eef3f1' }}
     >
+      {/*
+        Standard OSM tiles: no API key, unlike CARTO's basemaps which now
+        watermark unkeyed requests. Desaturated in CSS (.leaflet-tile-pane) so
+        the colourful default recedes behind the markers.
+      */}
       <TileLayer
-        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
-        url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
+        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        url="https://tile.openstreetmap.org/{z}/{x}/{y}.png"
+        maxZoom={19}
       />
 
       {valued.map((point, i) => {

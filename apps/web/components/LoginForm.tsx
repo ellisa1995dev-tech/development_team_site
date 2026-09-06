@@ -4,9 +4,11 @@ import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useState } from 'react';
 import { useUserAuth } from '@/lib/user-auth';
+import { useToast } from '@/components/Toast';
 
 export default function LoginForm() {
   const { login } = useUserAuth();
+  const toast = useToast();
   const router = useRouter();
   const params = useSearchParams();
   const next = params.get('next') ?? '/';
@@ -22,12 +24,12 @@ export default function LoginForm() {
     setSubmitting(true);
     try {
       const user = await login(email.trim(), password);
-      window.alert(`Signed in as ${user.fullName}.`);
+      toast.success('Welcome back', `Signed in as ${user.fullName}.`);
       router.push(next);
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Sign in failed.';
       setError(message);
-      window.alert(`Sign in failed.\n\n${message}`);
+      toast.error('Sign in failed', message);
     } finally {
       setSubmitting(false);
     }

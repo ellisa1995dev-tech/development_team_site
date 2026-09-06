@@ -1,6 +1,8 @@
 import type { Metadata } from 'next';
 import OrderForm from '@/components/OrderForm';
 import { ENGAGEMENT_MODELS } from '@/lib/content';
+import { PageHero } from '@/components/ui';
+import Reveal from '@/components/Reveal';
 
 export const metadata: Metadata = {
   title: 'Order a project',
@@ -17,28 +19,20 @@ const WHAT_HAPPENS = [
 export default function OrderPage() {
   return (
     <>
-      <section className="border-b border-ink-100 bg-ink-50">
-        <div className="container-page py-14 sm:py-20">
-          <p className="eyebrow">
-            <span className="h-1.5 w-1.5 rounded-full bg-grass-500" aria-hidden="true" />
-            Project orders
-          </p>
-          <h1 className="heading-1 mt-4 max-w-3xl">Tell us what you need built.</h1>
-          <p className="lede mt-5 max-w-2xl">
-            The more constraints you give us, the more useful our first reply will be. Rough ideas are welcome — so are
-            fully specified RFPs.
-          </p>
-        </div>
-      </section>
+      <PageHero
+        eyebrow="Project orders"
+        title="Tell us what you need built."
+        lede="The more constraints you give us, the more useful our first reply will be. Rough ideas are welcome — so are fully specified RFPs."
+      />
 
-      <section className="section">
+      <section className="section pt-12 sm:pt-16 lg:pt-20">
         <div className="container-page grid gap-8 lg:grid-cols-3 lg:gap-12">
-          <div className="lg:col-span-2">
+          <Reveal className="lg:col-span-2">
             <OrderForm />
-          </div>
+          </Reveal>
 
-          <aside className="space-y-5 lg:sticky lg:top-24 lg:self-start">
-            <div className="card">
+          <aside className="animate-fade-up space-y-5 delay-150 lg:sticky lg:top-24 lg:self-start">
+            <div className="card card-hover">
               <h2 className="heading-3">What happens next</h2>
               <ol className="mt-4 space-y-3">
                 {WHAT_HAPPENS.map((step, i) => (

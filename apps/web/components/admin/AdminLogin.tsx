@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useAdminAuth } from '@/lib/admin-auth';
+import Logo from '../Logo';
 
 export default function AdminLogin() {
   const { login } = useAdminAuth();
@@ -27,9 +28,7 @@ export default function AdminLogin() {
     <div className="grid min-h-[70vh] place-items-center bg-ink-50 px-4 py-12">
       <div className="w-full max-w-sm">
         <div className="mb-6 text-center">
-          <span className="mx-auto grid h-12 w-12 place-items-center rounded-2xl bg-gradient-to-br from-grass-500 to-sky-500 text-base font-bold text-white">
-            8
-          </span>
+          <Logo size={34} withWordmark={false} className="justify-center" />
           <h1 className="heading-3 mt-4">Admin console</h1>
           <p className="mt-1 text-sm text-ink-500">Team, projects, orders and visitor analytics.</p>
         </div>

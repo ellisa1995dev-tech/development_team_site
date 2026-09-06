@@ -5,19 +5,20 @@ import SiteHeader from '@/components/SiteHeader';
 import SiteFooter from '@/components/SiteFooter';
 import VisitTracker from '@/components/VisitTracker';
 import { UserAuthProvider } from '@/lib/user-auth';
+import { ToastProvider } from '@/components/Toast';
 
 export const metadata: Metadata = {
-  metadataBase: new URL('https://eightengineers.example'),
+  metadataBase: new URL('https://stackforge.example'),
   title: {
-    default: 'EightEngineers — Rust, Next.js & NestJS product team',
-    template: '%s · EightEngineers',
+    default: 'StackForge — Rust, Next.js & NestJS product team',
+    template: '%s · StackForge',
   },
   description:
     'Eight senior engineers with six years building together and AI in production since 2021. We design and ship products in Rust, Next.js and NestJS.',
   openGraph: {
     type: 'website',
-    siteName: 'EightEngineers',
-    title: 'EightEngineers — Rust, Next.js & NestJS product team',
+    siteName: 'StackForge',
+    title: 'StackForge — Rust, Next.js & NestJS product team',
     description:
       'Eight senior engineers. Six years together. AI in production since 2021. Rust, Next.js and NestJS.',
   },
@@ -42,13 +43,15 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           Skip to content
         </a>
 
-        <UserAuthProvider>
-          <SiteHeader />
-          <main id="main" className="flex-1">
-            {children}
-          </main>
-          <SiteFooter />
-        </UserAuthProvider>
+        <ToastProvider>
+          <UserAuthProvider>
+            <SiteHeader />
+            <main id="main" className="flex-1">
+              {children}
+            </main>
+            <SiteFooter />
+          </UserAuthProvider>
+        </ToastProvider>
 
         <Suspense fallback={null}>
           <VisitTracker />

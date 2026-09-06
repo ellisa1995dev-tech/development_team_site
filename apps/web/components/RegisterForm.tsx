@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 import { useUserAuth } from '@/lib/user-auth';
+import { useToast } from '@/components/Toast';
 import { API_URL } from '@/lib/api';
 
 const SIGNUP_SESSION_KEY = 'te_signup_session';
@@ -32,6 +33,7 @@ function newSignupSessionId(): string {
 
 export default function RegisterForm() {
   const { register } = useUserAuth();
+  const toast = useToast();
   const router = useRouter();
   const params = useSearchParams();
   const next = params.get('next') ?? '/';
@@ -120,12 +122,12 @@ export default function RegisterForm() {
         /* ignore */
       }
 
-      window.alert(`Registration complete. Welcome, ${user.fullName}.\n\nYou can now order a project or apply to join the team.`);
+      toast.success(`Welcome, ${user.fullName}`, 'Your account is ready — you can now order a project or apply to join the team.');
       router.push(next);
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Registration failed. Please try again.';
       setServerError(message);
-      window.alert(`Registration failed.\n\n${message}`);
+      toast.error('Registration failed', message);
     } finally {
       setSubmitting(false);
     }

@@ -1,4 +1,4 @@
-# EightEngineers — team introduction service
+# StackForge — team introduction service
 
 A public site introducing an eight-person engineering team, plus an admin console for
 running the business side: visitor analytics on a map, team management, active
@@ -35,6 +35,11 @@ Seeded admin credentials come from `apps/api/.env` — **change `ADMIN_PASSWORD`
 No Docker? Point `DATABASE_URL` at any PostgreSQL 14+ instance and run
 `npx prisma db push` from `apps/api` instead of `db:migrate`.
 
+**Open the site at `http://localhost:3000`,** not `127.0.0.1:3000` or a LAN IP.
+The API's `CORS_ORIGIN` allows `http://localhost:3000` only, so any other host
+silently fails every API call — the admin console bounces you back to the login
+screen. Add the other origin to `CORS_ORIGIN` (comma-separated) if you need it.
+
 ---
 
 ## Public site
@@ -59,6 +64,17 @@ including the "bring us an innovative idea" pitch box.
 - **Palette:** grass green `#3a9448`, sky blue `#00a5ec`, black `#0a0d0c`, white.
   Full scales are in [tailwind.config.ts](apps/web/tailwind.config.ts); components
   only reference those tokens.
+- **Motion:** drifting aurora gradients on the dark bands, scroll-reveal with
+  stagger ([Reveal.tsx](apps/web/components/Reveal.tsx)), count-up stats
+  ([AnimatedCounter.tsx](apps/web/components/AnimatedCounter.tsx)), a sheen that
+  sweeps across buttons on hover, card lift with a gradient-border glow, an
+  animated hamburger, and a scroll-progress hairline in the header. Every one is
+  disabled under `prefers-reduced-motion`, and the scroll-reveal components skip
+  straight to visible rather than staying hidden.
+- **Notifications:** there are no `window.alert` calls. Feedback goes through a
+  toast system ([Toast.tsx](apps/web/components/Toast.tsx)) — four variants,
+  stacked, auto-dismissing with a time-remaining bar, animated in and out, and
+  wired to `role="status"` / `role="alert"` so screen readers announce them.
 - **Mobile:** single-column below `sm`, off-canvas nav drawer with body-scroll lock,
   44px minimum tap targets, 16px inputs (stops iOS zoom-on-focus), wide content
   scrolls inside its own container so the page body never scrolls sideways.
@@ -79,13 +95,13 @@ account. The rule is enforced in two places:
   `UserGuard`, which rejects anonymous requests with `401 Please register.`
   Admin tokens are rejected too: the two audiences are deliberately separate.
 - **Client** — both forms call `requireRegistration()` before validating. With
-  no account it raises the **"Please register."** alert and stops. A banner
+  no account it raises the **"Please register."** toast and stops. A banner
   above the form and the submit label ("Register to send") make the requirement
   visible before the visitor gets that far.
 
-Every gated action confirms itself with an alert: registration complete, signed
-in, signed out, brief submitted, application submitted, and a matching alert on
-each failure.
+Every gated action confirms itself with a toast: registration complete, signed
+in, signed out, brief submitted, application submitted, and a matching error
+toast on each failure.
 
 Accounts are stored in `users` with a bcrypt hash and a coarse location
 resolved once at sign-up — that location is what the admin user map plots.
@@ -142,11 +158,17 @@ Every page view posts to `POST /api/visits/track`. The API:
    fallback, cached per IP for 24h. Configurable via `GEOIP_PROVIDER`; set it to
    `none`, or swap `lookupRemote` in [geoip.service.ts](apps/api/src/common/geoip.service.ts)
    for a local MaxMind GeoLite2 reader, if you'd rather not call a third party.
+   Local requests have no routable IP, so set `GEOIP_DEV_LATLNG="lat,lng"` to pin a
+   placeholder while developing (already set in `apps/api/.env`). Leave it blank in
+   production — without it, local registrations simply carry no coordinates.
 3. Stores a **salted SHA-256 hash of the IP, never the IP itself**, and drops
    obvious bots.
 
-The map (`/admin/visitors`) is Leaflet with a CARTO light basemap and **two marker
-styles you can toggle**:
+The map (`/admin/visitors`) is Leaflet over standard OpenStreetMap tiles,
+desaturated in CSS to keep the palette calm. OSM needs no API key — CARTO's
+basemaps now watermark unkeyed requests. OSM's tile policy suits low-volume use;
+for heavy traffic, move to a keyed provider. There are **two marker styles you can
+toggle**:
 
 - **Circle markers** — radius scales with the count on a square-root curve, so
   circle *area* tracks visitor numbers rather than radius.
@@ -196,7 +218,20 @@ The eight profiles, five projects and company history are **realistic placeholde
 consistent with the brief (6 years as a team, AI since 2021, every engineer 7+ years,
 combined 90 years). Swap them in [seed.ts](apps/api/prisma/seed.ts) and mirror the
 change in [content.ts](apps/web/lib/content.ts), which holds the offline fallback.
-The site name "EightEngineers" is a placeholder too.
+The site name is **StackForge**, and the logo lives in
+[apps/web/components/Logo.tsx](apps/web/components/Logo.tsx). Assets generated
+from the supplied artwork:
+
+| File | Purpose |
+|---|---|
+| `apps/web/public/logo-mark.png` | Transparent mark used in the header, footer and auth screens |
+| `apps/web/public/logo-original.png` | The original artwork, dark backdrop intact |
+| `apps/web/app/icon.png` | Favicon (512px, auto-detected by Next.js) |
+| `apps/web/app/apple-icon.png` | iOS home-screen icon (180px) |
+| `apps/web/app/opengraph-image.png` | Social share card (1200x630) |
+
+To change the logo, replace `logo-mark.png` (transparent PNG or SVG) and update
+`MARK_W` / `MARK_H` in `Logo.tsx` if the aspect ratio differs.
 
 ---
 

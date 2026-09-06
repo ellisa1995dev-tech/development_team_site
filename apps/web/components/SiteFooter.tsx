@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { TEAM_FACTS } from '@/lib/content';
+import Logo from './Logo';
 
 export default function SiteFooter() {
   return (
@@ -7,14 +8,7 @@ export default function SiteFooter() {
       <div className="container-page py-12 sm:py-16">
         <div className="grid gap-10 sm:grid-cols-2 lg:grid-cols-4">
           <div className="lg:col-span-2">
-            <div className="flex items-center gap-2.5">
-              <span className="grid h-9 w-9 place-items-center rounded-xl bg-gradient-to-br from-grass-500 to-sky-500 text-sm font-bold text-white">
-                8
-              </span>
-              <span className="text-base font-bold tracking-tight text-white">
-                Eight<span className="text-grass-400">Engineers</span>
-              </span>
-            </div>
+            <Logo size={30} tone="light" />
             <p className="mt-4 max-w-sm text-sm leading-relaxed text-ink-300">
               {TEAM_FACTS.headcount} senior engineers, {TEAM_FACTS.yearsTogether} years building together, and AI in
               production since {TEAM_FACTS.aiSince}. Rust, Next.js and NestJS.
@@ -70,7 +64,7 @@ export default function SiteFooter() {
         </div>
 
         <div className="mt-12 flex flex-col gap-3 border-t border-ink-800 pt-6 text-xs text-ink-400 sm:flex-row sm:items-center sm:justify-between">
-          <p>&copy; {new Date().getFullYear()} EightEngineers. All rights reserved.</p>
+          <p>&copy; {new Date().getFullYear()} StackForge. All rights reserved.</p>
           <p className="font-mono">Rust · Next.js · NestJS · PostgreSQL</p>
         </div>
       </div>

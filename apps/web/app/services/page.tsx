@@ -1,7 +1,8 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { SERVICES, ENGAGEMENT_MODELS, TEAM_FACTS } from '@/lib/content';
-import { SectionHeading } from '@/components/ui';
+import { SectionHeading, PageHero } from '@/components/ui';
+import Reveal from '@/components/Reveal';
 
 export const metadata: Metadata = {
   title: 'Services',
@@ -35,28 +36,19 @@ const PROCESS = [
 export default function ServicesPage() {
   return (
     <>
-      <section className="border-b border-ink-100 bg-ink-50">
-        <div className="container-page py-14 sm:py-20">
-          <p className="eyebrow">
-            <span className="h-1.5 w-1.5 rounded-full bg-grass-500" aria-hidden="true" />
-            Services
-          </p>
-          <h1 className="heading-1 mt-4 max-w-3xl">Engineering, priced and scoped like engineering.</h1>
-          <p className="lede mt-5 max-w-2xl">
-            Four practices, one team of {TEAM_FACTS.headcount}. We choose the language per layer — Rust for the hot
-            paths, NestJS for the domain, Next.js for the surface — and we tell you when a piece of work is not worth
-            doing.
-          </p>
-        </div>
-      </section>
+      <PageHero
+        eyebrow="Services"
+        title="Engineering, priced and scoped like engineering."
+        lede={`Four practices, one team of ${TEAM_FACTS.headcount}. We choose the language per layer — Rust for the hot paths, NestJS for the domain, Next.js for the surface — and we tell you when a piece of work is not worth doing.`}
+      />
 
-      <section className="section">
+      <section className="section pt-12 sm:pt-16 lg:pt-20">
         <div className="container-page space-y-5 sm:space-y-6">
           {SERVICES.map((service, index) => (
+            <Reveal key={service.slug} delay={index * 80}>
             <article
-              key={service.slug}
               id={service.slug}
-              className="grid gap-6 rounded-2xl border border-ink-100 bg-white p-5 shadow-card sm:p-7 lg:grid-cols-3 lg:gap-10"
+              className="card card-glow grid gap-6 p-5 transition-all duration-500 hover:-translate-y-1 hover:shadow-lift sm:p-7 lg:grid-cols-3 lg:gap-10"
             >
               <div className="lg:col-span-1">
                 <span className="font-mono text-xs font-semibold text-ink-300">
@@ -85,6 +77,7 @@ export default function ServicesPage() {
                 </ul>
               </div>
             </article>
+            </Reveal>
           ))}
         </div>
       </section>
