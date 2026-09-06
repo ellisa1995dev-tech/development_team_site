@@ -2,6 +2,7 @@
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { apiFetch } from './api';
+import { useToast } from '@/components/Toast';
 
 const TOKEN_KEY = 'te_admin_token';
 
@@ -30,6 +31,7 @@ export function AdminAuthProvider({ children }: { children: React.ReactNode }) {
   const [token, setToken] = useState<string | null>(null);
   const [user, setUser] = useState<AdminUser | null>(null);
   const [ready, setReady] = useState(false);
+  const { info } = useToast();
 
   useEffect(() => {
     let stored: string | null = null;
@@ -82,7 +84,8 @@ export function AdminAuthProvider({ children }: { children: React.ReactNode }) {
     }
     setToken(null);
     setUser(null);
-  }, []);
+    info('Signed out of the console', 'Your session has been cleared.');
+  }, [info]);
 
   const value = useMemo(() => ({ token, user, ready, login, logout }), [token, user, ready, login, logout]);
 

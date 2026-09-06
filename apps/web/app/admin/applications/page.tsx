@@ -5,6 +5,7 @@ import { useAdminData, useAdminMutation } from '@/lib/use-admin-data';
 import type { JoinApplication, ApplicationStatus } from '@/lib/types';
 import { StatusBadge } from '@/components/ui';
 import { ROLE_LABEL } from '@/lib/content';
+import { useToast } from '@/components/Toast';
 
 const STATUSES: ApplicationStatus[] = ['NEW', 'SCREENING', 'INTERVIEW', 'OFFER', 'HIRED', 'REJECTED'];
 
@@ -19,10 +20,36 @@ export default function AdminApplicationsPage() {
     filter === 'ALL' ? '/admin/applications' : `/admin/applications?status=${filter}`,
   );
   const { mutate, busy } = useAdminMutation();
+  const toast = useToast();
 
-  async function setStatus(id: string, status: ApplicationStatus) {
-    await mutate(`/admin/applications/${id}`, 'PATCH', { status });
-    reload();
+  async function setStatus(app: JoinApplication, status: ApplicationStatus, isUndo = false) {
+    const previous = app.status;
+    if (status === previous) return;
+
+    try {
+      await mutate(`/admin/applications/${app.id}`, 'PATCH', { status });
+      reload();
+
+      if (isUndo) {
+        toast.info('Reverted', `${app.fullName} is back to ${status.toLowerCase()}.`);
+        return;
+      }
+
+      // Hiring outcomes are the ones you least want to fire by accident.
+      const decisive = status === 'HIRED' || status === 'REJECTED' || status === 'OFFER';
+      toast.toast({
+        title: decisive ? `Marked ${status.toLowerCase()}` : 'Application updated',
+        description: `${app.fullName} → ${status.toLowerCase()}`,
+        variant: status === 'REJECTED' ? 'warning' : 'success',
+        duration: decisive ? 10000 : 8000,
+        action: {
+          label: `Undo (back to ${previous.toLowerCase()})`,
+          onClick: () => setStatus({ ...app, status }, previous, true),
+        },
+      });
+    } catch (err) {
+      toast.error('Could not update the application', err instanceof Error ? err.message : undefined);
+    }
   }
 
   const applications = data ?? [];
@@ -103,7 +130,8 @@ export default function AdminApplicationsPage() {
                     className="input py-2 text-sm"
                     value={app.status}
                     disabled={busy}
-                    onChange={(e) => setStatus(app.id, e.target.value as ApplicationStatus)}
+                    onWheel={(e) => e.currentTarget.blur()}
+                    onChange={(e) => setStatus(app, e.target.value as ApplicationStatus)}
                   >
                     {STATUSES.map((s) => (
                       <option key={s} value={s}>
