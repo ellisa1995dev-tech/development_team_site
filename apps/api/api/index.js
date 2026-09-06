@@ -9,6 +9,8 @@
  * The Nest instance is cached on the module scope so warm invocations reuse
  * the same Express app and the same Prisma connection pool.
  */
+require('reflect-metadata');
+
 const express = require('express');
 const { NestFactory } = require('@nestjs/core');
 const { ExpressAdapter } = require('@nestjs/platform-express');

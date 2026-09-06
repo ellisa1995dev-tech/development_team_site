@@ -131,6 +131,26 @@ comma-separated or use a stable domain.
 **`Cannot find module '../dist/app.module'`** — the build did not run. Confirm
 the API project's Root Directory is `apps/api` so its `vercel.json` is picked up.
 
+**`Cannot find module 'express'`** — `express` must stay in `apps/api`
+dependencies. It is required directly by the handler; locally it resolves
+through npm's hoisting even when undeclared, which hides the problem until
+Vercel traces the function.
+
+**`Prisma Client could not locate the Query Engine for runtime
+"rhel-openssl-3.0.x"`** — the schema's generator block needs
+`binaryTargets = ["native", "rhel-openssl-3.0.x"]`. Vercel's Lambda runtime is
+not the same image as its build container, so the auto-detected engine alone is
+not enough. Redeploy with the cache cleared after changing it.
+
+**`Reflect.getMetadata is not a function`** or DI failing with
+`Nest can't resolve dependencies` — `reflect-metadata` has to be imported before
+the module graph loads. `src/main.ts` does it, but the serverless handler never
+runs `main.ts`, so `api/index.js` imports it on its first line.
+
+**Build succeeds, every request 500s** — check the function logs in Vercel, not
+the build log. The usual causes are a missing `DATABASE_URL` or the
+`pgbouncer=true` flag above.
+
 **Admin console bounces back to the login screen** — the token verify call is
 failing, almost always CORS or a wrong `NEXT_PUBLIC_API_URL`. Check the browser
 network tab for `/api/auth/me`.
