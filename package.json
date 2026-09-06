@@ -1,0 +1,23 @@
+{
+  "name": "my-development-team",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Team introduction service - Next.js web + NestJS API + PostgreSQL",
+  "workspaces": ["apps/*"],
+  "scripts": {
+    "dev": "concurrently -n api,web -c green,cyan \"npm:dev:api\" \"npm:dev:web\"",
+    "dev:api": "npm run start:dev --workspace @team/api",
+    "dev:web": "npm run dev --workspace @team/web",
+    "build": "npm run build --workspace @team/api && npm run build --workspace @team/web",
+    "db:up": "docker compose up -d postgres",
+    "db:down": "docker compose down",
+    "db:migrate": "npm run prisma:migrate --workspace @team/api",
+    "db:seed": "npm run prisma:seed --workspace @team/api",
+    "db:studio": "npm run prisma:studio --workspace @team/api",
+    "setup": "npm install && npm run db:up && npm run db:migrate && npm run db:seed"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.2"
+  },
+  "engines": { "node": ">=20" }
+}
