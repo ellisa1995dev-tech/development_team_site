@@ -36,6 +36,18 @@ export class UsersController {
   }
 
   /**
+   * Signs the caller out. The token is discarded on the client; this exists
+   * so the console stops showing the account as online straight away rather
+   * than waiting out the five-minute window.
+   */
+  @Post('signout')
+  @HttpCode(200)
+  @UseGuards(UserGuard)
+  signOut(@Req() req: AuthedRequest) {
+    return this.users.signOut(req.user!.sub);
+  }
+
+  /**
    * Closes the caller's own account. Requires their password again, because
    * the action cannot be undone.
    */

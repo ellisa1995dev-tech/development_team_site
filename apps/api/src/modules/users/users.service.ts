@@ -227,6 +227,29 @@ export class UsersService implements OnModuleInit {
   }
 
   /**
+   * Marks an account offline the moment its owner signs out.
+   *
+   * "Online" is derived from lastSeenAt falling inside a five-minute window,
+   * which is the right guess while someone is browsing — but signing out is
+   * not a guess. Without this the final heartbeat keeps the account showing
+   * as online in the console for up to five more minutes, and no amount of
+   * reloading changes it, because the staleness lives in the database.
+   *
+   * updateMany rather than update: the account may already be gone (a
+   * cancellation signs out straight after deleting it), and that is not an
+   * error worth failing a sign-out over.
+   */
+  async signOut(userId: string) {
+    await this.prisma.user
+      .updateMany({
+        where: { id: userId },
+        data: { lastSeenAt: new Date(Date.now() - ONLINE_STALE_MS - 1000) },
+      })
+      .catch(() => undefined);
+    return { signedOut: true };
+  }
+
+  /**
    * Called by the registration form while someone is filling it in, so the
    * admin console can show how many people are mid-sign-up right now.
    */
