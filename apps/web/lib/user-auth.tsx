@@ -130,6 +130,16 @@ export function UserAuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const logout = useCallback(() => {
+    // Tell the server first, while the token is still valid: "online" is
+    // derived from the last heartbeat, so without this the admin console
+    // keeps showing the account as online for the rest of the five-minute
+    // window. Fire-and-forget — signing out locally must never depend on
+    // the network, and the window expires on its own if the call fails.
+    const current = tokenRef.current;
+    if (current) {
+      apiFetch('/users/signout', { method: 'POST', token: current }).catch(() => undefined);
+    }
+
     writeToken(null);
     setToken(null);
     setUser(null);
