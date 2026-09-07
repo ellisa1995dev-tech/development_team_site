@@ -1,11 +1,13 @@
-import { ConflictException, Injectable, UnauthorizedException } from '@nestjs/common';
+import { ConflictException, Injectable, Logger, UnauthorizedException, type OnModuleInit } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcryptjs';
+import { UserRole } from '@prisma/client';
 import type { Request } from 'express';
 import { PrismaService } from '../../prisma/prisma.service';
 import { GeoIpService } from '../../common/geoip.service';
 import { getClientIp } from '../../common/client-ip';
 import { RegisterDto, LoginUserDto } from './users.dto';
+import { parseAdminEmails, hasDomainWildcard, roleForEmail } from './admin-emails';
 
 /** A sign-up in progress counts as "live" for this long after its last ping. */
 const SIGNUP_STALE_MS = 2 * 60 * 1000;
@@ -13,12 +15,36 @@ const SIGNUP_STALE_MS = 2 * 60 * 1000;
 const ONLINE_STALE_MS = 5 * 60 * 1000;
 
 @Injectable()
-export class UsersService {
+export class UsersService implements OnModuleInit {
+  private readonly logger = new Logger(UsersService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly jwt: JwtService,
     private readonly geoip: GeoIpService,
   ) {}
+
+  onModuleInit() {
+    const allowlist = parseAdminEmails(process.env.ADMIN_EMAILS);
+
+    if (!allowlist.length) {
+      this.logger.log('ADMIN_EMAILS is empty — every registration gets the USER role.');
+      return;
+    }
+
+    this.logger.log(`ADMIN_EMAILS: ${allowlist.length} entr${allowlist.length === 1 ? 'y' : 'ies'} grant management access.`);
+
+    if (hasDomainWildcard(allowlist)) {
+      this.logger.warn(
+        'ADMIN_EMAILS contains a whole-domain entry. Because sign-up does not verify email ownership, anyone who registers with an address at that domain becomes a manager. Prefer listing individual addresses.',
+      );
+    }
+  }
+
+  /** The allowlist is read per call so a redeploy is not needed to change it. */
+  private get adminEmails(): string[] {
+    return parseAdminEmails(process.env.ADMIN_EMAILS);
+  }
 
   static signupCutoff(): Date {
     return new Date(Date.now() - SIGNUP_STALE_MS);
@@ -28,12 +54,33 @@ export class UsersService {
     return new Date(Date.now() - ONLINE_STALE_MS);
   }
 
-  private sign(user: { id: string; email: string; fullName: string }) {
-    return this.jwt.signAsync({ sub: user.id, email: user.email, name: user.fullName, role: 'user' });
+  private sign(user: { id: string; email: string; fullName: string; role: UserRole }) {
+    return this.jwt.signAsync({
+      sub: user.id,
+      email: user.email,
+      name: user.fullName,
+      role: 'user',
+      // Kept separate from `role` so the existing user/admin audience check is
+      // untouched; this is what gates the management section.
+      access: user.role,
+    });
   }
 
-  private publicShape(user: { id: string; email: string; fullName: string; company: string | null }) {
-    return { id: user.id, email: user.email, fullName: user.fullName, company: user.company };
+  private publicShape(user: {
+    id: string;
+    email: string;
+    fullName: string;
+    company: string | null;
+    role: UserRole;
+  }) {
+    return {
+      id: user.id,
+      email: user.email,
+      fullName: user.fullName,
+      company: user.company,
+      role: user.role,
+      isManager: user.role === UserRole.MANAGER,
+    };
   }
 
   async register(dto: RegisterDto, req: Request) {
@@ -53,6 +100,7 @@ export class UsersService {
         fullName: dto.fullName.trim(),
         company: dto.company?.trim() || null,
         passwordHash: await bcrypt.hash(dto.password, 10),
+        role: roleForEmail(email, this.adminEmails),
         country: geo.country ?? null,
         countryCode: geo.countryCode ?? null,
         region: geo.region ?? null,
@@ -81,9 +129,20 @@ export class UsersService {
     const ok = await bcrypt.compare(dto.password, hash);
     if (!user || !ok) throw new UnauthorizedException('Invalid email or password');
 
-    await this.prisma.user.update({ where: { id: user.id }, data: { lastSeenAt: new Date() } });
+    const expected = roleForEmail(user.email, this.adminEmails);
+    const fresh =
+      expected === user.role
+        ? await this.prisma.user.update({ where: { id: user.id }, data: { lastSeenAt: new Date() } })
+        : await this.prisma.user.update({
+            where: { id: user.id },
+            data: { lastSeenAt: new Date(), role: expected },
+          });
 
-    return { token: await this.sign(user), user: this.publicShape(user) };
+    if (expected !== user.role) {
+      this.logger.log(`${user.email}: role ${user.role} -> ${expected} (ADMIN_EMAILS changed)`);
+    }
+
+    return { token: await this.sign(fresh), user: this.publicShape(fresh) };
   }
 
   async me(userId: string) {

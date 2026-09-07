@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { apiFetch } from './api';
-import { useAdminAuth } from './admin-auth';
+import { useUserAuth } from './user-auth';
 
 interface Result<T> {
   data: T | null;
@@ -13,7 +13,7 @@ interface Result<T> {
 
 /** Small fetch-on-mount hook for authenticated console endpoints. */
 export function useAdminData<T>(path: string | null): Result<T> {
-  const { token } = useAdminAuth();
+  const { token } = useUserAuth();
   const [data, setData] = useState<T | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -49,7 +49,7 @@ export function useAdminData<T>(path: string | null): Result<T> {
 
 /** Mutations (PATCH/DELETE) from the console tables. */
 export function useAdminMutation() {
-  const { token } = useAdminAuth();
+  const { token } = useUserAuth();
   const [busy, setBusy] = useState(false);
 
   const mutate = useCallback(

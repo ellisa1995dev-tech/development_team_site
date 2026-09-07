@@ -62,11 +62,7 @@ export default function SiteFooter() {
                   Pitch an idea
                 </Link>
               </li>
-              <li>
-                <Link href="/admin" className="text-ink-400 transition hover:text-sky-400">
-                  Admin console
-                </Link>
-              </li>
+
             </ul>
           </div>
         </div>

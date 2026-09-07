@@ -6,11 +6,16 @@ import { useToast } from '@/components/Toast';
 
 const TOKEN_KEY = 'te_user_token';
 
+export type SiteUserRole = 'USER' | 'MANAGER';
+
 export interface SiteUser {
   id: string;
   email: string;
   fullName: string;
   company?: string | null;
+  role: SiteUserRole;
+  /** Convenience mirror of role === 'MANAGER', set by the server. */
+  isManager: boolean;
 }
 
 interface UserAuthState {
@@ -18,6 +23,12 @@ interface UserAuthState {
   user: SiteUser | null;
   ready: boolean;
   isRegistered: boolean;
+  /**
+   * Whether to show the Management section. The server decides this from its
+   * own allowlist and enforces it on every management route — this flag only
+   * controls what gets rendered.
+   */
+  isManager: boolean;
   register: (input: RegisterInput) => Promise<SiteUser>;
   login: (email: string, password: string) => Promise<SiteUser>;
   logout: () => void;
@@ -140,6 +151,7 @@ export function UserAuthProvider({ children }: { children: React.ReactNode }) {
       user,
       ready,
       isRegistered: Boolean(token),
+      isManager: Boolean(token) && user?.role === 'MANAGER',
       register,
       login,
       logout,

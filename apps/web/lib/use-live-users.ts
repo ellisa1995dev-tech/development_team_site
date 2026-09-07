@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { apiFetch } from './api';
-import { useAdminAuth } from './admin-auth';
+import { useUserAuth } from './user-auth';
 
 export interface LiveUserStats {
   registeredTotal: number;
@@ -29,7 +29,7 @@ const POLL_MS = 3000;
  * hitting the API entirely.
  */
 export function useLiveUsers() {
-  const { token } = useAdminAuth();
+  const { token } = useUserAuth();
   const [data, setData] = useState<LiveUserStats | null>(null);
   const [status, setStatus] = useState<Status>('connecting');
   const inFlight = useRef(false);

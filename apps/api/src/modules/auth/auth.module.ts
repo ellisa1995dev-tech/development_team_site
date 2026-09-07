@@ -1,9 +1,14 @@
 import { Global, Module } from '@nestjs/common';
 import { JwtModule } from '@nestjs/jwt';
-import { AuthService } from './auth.service';
-import { AuthController } from './auth.controller';
 import { AdminGuard } from './admin.guard';
 
+/**
+ * Token plumbing only.
+ *
+ * There is no separate admin login any more: /api/users/login issues the one
+ * token the whole application uses, and elevation comes from the ADMIN_EMAILS
+ * allowlist. This module just registers the signer and the console guard.
+ */
 @Global()
 @Module({
   imports: [
@@ -13,8 +18,7 @@ import { AdminGuard } from './admin.guard';
       signOptions: { expiresIn: (process.env.JWT_EXPIRES_IN ?? '12h') as `${number}h` },
     }),
   ],
-  controllers: [AuthController],
-  providers: [AuthService, AdminGuard],
+  providers: [AdminGuard],
   exports: [AdminGuard],
 })
 export class AuthModule {}

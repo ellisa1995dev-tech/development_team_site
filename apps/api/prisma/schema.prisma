@@ -194,19 +194,20 @@ model Visit {
   @@map("visits")
 }
 
-// ---------------------------------------------------------------- admin
 
-model AdminUser {
-  id           String   @id @default(cuid())
-  email        String   @unique
-  passwordHash String   @map("password_hash")
-  name         String
-  createdAt    DateTime @default(now()) @map("created_at")
-
-  @@map("admin_users")
-}
 
 // ---------------------------------------------------------------- site users
+
+/// What a registered site user is allowed to see.
+///
+/// MANAGER is granted only when the address appears in the ADMIN_EMAILS
+/// allowlist, which lives in the server environment. It is never derived from
+/// a pattern the visitor can type, because nothing here verifies email
+/// ownership — anyone could otherwise claim an admin-looking address.
+enum UserRole {
+  USER
+  MANAGER
+}
 
 /// A member of the public who has registered on the site. Registering is a
 /// precondition for ordering a project or applying to join the team.
@@ -216,6 +217,7 @@ model User {
   passwordHash String   @map("password_hash")
   fullName     String   @map("full_name")
   company      String?
+  role         UserRole @default(USER)
   // Coarse location captured once at registration, used for the admin map.
   country      String?
   countryCode  String?  @map("country_code")

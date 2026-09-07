@@ -1,7 +1,6 @@
 /* eslint-disable no-console */
 import { PrismaClient, MemberRole, ProjectStatus } from '@prisma/client';
 import type { TeamMember, Project } from '@prisma/client';
-import * as bcrypt from 'bcryptjs';
 
 const prisma = new PrismaClient();
 
@@ -173,14 +172,19 @@ const projects = [
 async function main() {
   console.log('Seeding database...');
 
-  const email = (process.env.ADMIN_EMAIL ?? 'admin@team.dev').toLowerCase();
-  const password = process.env.ADMIN_PASSWORD ?? 'change-me-now';
-  await prisma.adminUser.upsert({
-    where: { email },
-    update: {},
-    create: { email, name: 'Team Admin', passwordHash: await bcrypt.hash(password, 10) },
-  });
-  console.log(`  admin user: ${email}`);
+  // No admin account is seeded. There is one account system now: register on
+  // the site as normal, and put that address in ADMIN_EMAILS to unlock the
+  // management overview and the admin console.
+  const allowlist = (process.env.ADMIN_EMAILS ?? '')
+    .split(',')
+    .map((e) => e.trim())
+    .filter(Boolean);
+
+  if (allowlist.length) {
+    console.log(`  management access: ${allowlist.join(', ')}`);
+  } else {
+    console.log('  management access: ADMIN_EMAILS is empty — set it, then register/sign in with that address.');
+  }
 
   const createdMembers: TeamMember[] = [];
   for (const m of members) {
