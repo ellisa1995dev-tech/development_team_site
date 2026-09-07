@@ -7,6 +7,7 @@ import { PrismaModule } from './prisma/prisma.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { HealthModule } from './modules/health/health.module';
 import { UsersModule } from './modules/users/users.module';
+import { ManagementModule } from './modules/management/management.module';
 import { MembersModule } from './modules/members/members.module';
 import { ProjectsModule } from './modules/projects/projects.module';
 import { OrdersModule } from './modules/orders/orders.module';
@@ -23,6 +24,7 @@ import { StatsModule } from './modules/stats/stats.module';
     HealthModule,
     AuthModule,
     UsersModule,
+    ManagementModule,
     MembersModule,
     ProjectsModule,
     OrdersModule,

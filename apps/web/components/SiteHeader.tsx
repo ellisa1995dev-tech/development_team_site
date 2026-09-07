@@ -14,12 +14,19 @@ const NAV = [
   { href: '/join', label: 'Join us' },
 ];
 
+/**
+ * Shown only to management accounts. Hiding it is a convenience, not the
+ * control — /api/management/* refuses anyone without the role regardless of
+ * what the navigation renders.
+ */
+const MANAGEMENT_LINK = { href: '/management', label: 'Management' };
+
 export default function SiteHeader() {
   const [open, setOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [progress, setProgress] = useState(0);
   const pathname = usePathname();
-  const { ready, isRegistered, user, logout } = useUserAuth();
+  const { ready, isRegistered, isManager, user, logout } = useUserAuth();
 
   // Close the drawer on navigation so a tap never leaves it hanging open.
   useEffect(() => setOpen(false), [pathname]);
@@ -69,7 +76,7 @@ export default function SiteHeader() {
         </Link>
 
         <nav className="hidden items-center gap-0.5 md:flex" aria-label="Main">
-          {NAV.map((item) => {
+          {(ready && isManager ? [...NAV, MANAGEMENT_LINK] : NAV).map((item) => {
             const active = pathname === item.href;
             return (
               <Link
@@ -161,7 +168,7 @@ export default function SiteHeader() {
         style={{ background: 'color-mix(in srgb, var(--bg-page) 95%, transparent)' }}
       >
         <nav className="container-page flex flex-col gap-1 py-3" aria-label="Mobile">
-          {NAV.map((item, i) => (
+          {(ready && isManager ? [...NAV, MANAGEMENT_LINK] : NAV).map((item, i) => (
             <Link
               key={item.href}
               href={item.href}

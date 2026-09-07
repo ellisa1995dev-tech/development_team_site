@@ -17,7 +17,14 @@ export class AuthService {
     const ok = await bcrypt.compare(password, hash);
     if (!user || !ok) throw new UnauthorizedException('Invalid email or password');
 
-    const token = await this.jwt.signAsync({ sub: user.id, email: user.email, name: user.name });
+    // `role: 'admin'` is what AdminGuard checks. Without it a site-user token,
+    // signed with the same secret, would satisfy the admin guard too.
+    const token = await this.jwt.signAsync({
+      sub: user.id,
+      email: user.email,
+      name: user.name,
+      role: 'admin',
+    });
     return { token, user: { id: user.id, email: user.email, name: user.name } };
   }
 }
