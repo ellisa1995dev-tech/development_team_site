@@ -4,7 +4,7 @@ import { Fragment, useCallback, useState } from 'react';
 import { useAdminData, useAdminMutation } from '@/lib/use-admin-data';
 import { useTable } from '@/lib/use-table';
 import { useToast } from '@/components/Toast';
-import { SearchInput, SortableHeader, PlainHeader, TableCard, EmptyRow } from '@/components/admin/TableShell';
+import { SearchInput, SortableHeader, PlainHeader, TableCard, EmptyRow, Pagination } from '@/components/admin/TableShell';
 import type { Project, ProjectStatus } from '@/lib/types';
 
 const STATUSES: ProjectStatus[] = ['ACTIVE', 'COMPLETED', 'PAUSED'];
@@ -115,7 +115,7 @@ export default function AdminProjectsPage() {
           value={table.query}
           onChange={table.setQuery}
           placeholder="Search name, domain, stack, engineer…"
-          resultCount={table.rows.length}
+          resultCount={table.matched}
           total={table.total}
         />
 
@@ -167,7 +167,7 @@ export default function AdminProjectsPage() {
 
           <tbody className="divide-theme">
             {loading ? <EmptyRow colSpan={COLUMNS} message="Loading…" /> : null}
-            {!loading && table.rows.length === 0 ? (
+            {!loading && table.matched === 0 ? (
               <EmptyRow colSpan={COLUMNS} message={table.query ? `No projects match “${table.query}”.` : 'No projects in this view.'} />
             ) : null}
 
@@ -346,6 +346,18 @@ export default function AdminProjectsPage() {
             })}
           </tbody>
         </table>
+
+        <Pagination
+          page={table.page}
+          pageCount={table.pageCount}
+          pageSize={table.pageSize}
+          firstShown={table.firstShown}
+          lastShown={table.lastShown}
+          matched={table.matched}
+          onPage={table.setPage}
+          onPageSize={table.setPageSize}
+          noun="project"
+        />
       </TableCard>
     </div>
   );

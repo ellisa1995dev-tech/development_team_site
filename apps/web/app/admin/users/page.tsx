@@ -5,6 +5,7 @@ import { useMemo, useState } from 'react';
 import { useAdminData } from '@/lib/use-admin-data';
 import { useLiveUsers } from '@/lib/use-live-users';
 import type { MarkerMode, MapPoint } from '@/components/admin/VisitorMap';
+import RegisteredUsersTable from '@/components/admin/RegisteredUsersTable';
 
 const VisitorMap = dynamic(() => import('@/components/admin/VisitorMap'), {
   ssr: false,
@@ -166,6 +167,9 @@ export default function AdminUsersPage() {
           blue. Locations come from the IP the account was created on.
         </p>
       </section>
+
+      {/* --------------------------------------------------- manage users */}
+      <RegisteredUsersTable />
 
       {/* -------------------------------------------------- recent + table */}
       <div className="grid gap-4 lg:grid-cols-2">

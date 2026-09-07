@@ -1,5 +1,6 @@
 import { Controller, Get } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
+import { parseAdminEmails } from '../users/admin-emails';
 
 /**
  * Deployment triage. `/api/health` proves the function booted and Nest wired
@@ -22,6 +23,9 @@ export class HealthController {
         IP_HASH_SALT: Boolean(process.env.IP_HASH_SALT),
         CORS_ORIGIN: process.env.CORS_ORIGIN ?? null,
         pooled: (process.env.DATABASE_URL ?? '').includes('pgbouncer=true'),
+        // Count only — never the addresses themselves, which would tell an
+        // anonymous caller exactly which accounts to go after.
+        adminEmailsConfigured: parseAdminEmails(process.env.ADMIN_EMAILS).length,
       },
       at: new Date().toISOString(),
     };
