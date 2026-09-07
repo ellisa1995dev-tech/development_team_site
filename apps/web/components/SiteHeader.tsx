@@ -102,12 +102,13 @@ export default function SiteHeader() {
           <ThemePicker />
           {ready && isRegistered ? (
             <>
-              <span
-                className="max-w-[9rem] animate-fade-in truncate rounded-lg surface-subtle px-2.5 py-1.5 text-xs font-medium text-muted"
-                title={user?.email}
+              <Link
+                href="/account"
+                className="max-w-[9rem] animate-fade-in truncate rounded-lg surface-subtle px-2.5 py-1.5 text-xs font-medium text-muted transition hover:text-body"
+                title={`${user?.email} — manage your account`}
               >
                 {user?.fullName}
-              </span>
+              </Link>
               <button type="button" onClick={logout} className="btn-outline px-3.5">
                 Sign out
               </button>
@@ -187,9 +188,10 @@ export default function SiteHeader() {
           <div className="mt-2 border-t pt-3 border-theme">
             {ready && isRegistered ? (
               <>
-                <p className="px-3 pb-2 text-sm text-muted">
+                <Link href="/account" className="block rounded-xl px-3 py-2 text-sm text-muted hover:text-body">
                   Signed in as <span className="font-semibold text-body">{user?.fullName}</span>
-                </p>
+                  <span className="mt-0.5 block text-xs text-faint">Manage your account</span>
+                </Link>
                 <button type="button" onClick={logout} className="btn-outline w-full">
                   Sign out
                 </button>

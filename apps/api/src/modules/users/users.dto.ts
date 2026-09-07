@@ -17,3 +17,10 @@ export class LoginUserDto {
 export class SignupActivityDto {
   @IsString() @MinLength(1) @MaxLength(64) sessionId!: string;
 }
+
+export class CancelMembershipDto {
+  /** Re-checked server-side: closing an account is irreversible. */
+  @IsString() @MinLength(1) @MaxLength(200) password!: string;
+
+  @IsOptional() @IsString() @MaxLength(500) reason?: string;
+}
