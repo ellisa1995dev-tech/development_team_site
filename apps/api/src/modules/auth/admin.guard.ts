@@ -1,33 +1,49 @@
-import { CanActivate, ExecutionContext, Injectable, UnauthorizedException } from '@nestjs/common';
+import { CanActivate, ExecutionContext, Injectable, ForbiddenException, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
+import { UserRole } from '@prisma/client';
 import type { Request } from 'express';
 
+interface TokenPayload {
+  sub: string;
+  email: string;
+  name: string;
+  /** Audience. Only site-user tokens are issued now. */
+  role?: string;
+  /** Elevation, granted from the ADMIN_EMAILS allowlist. */
+  access?: UserRole;
+}
+
+/**
+ * Gates the admin console.
+ *
+ * There is one account system: a registered site user whose email is on the
+ * ADMIN_EMAILS allowlist carries `access: MANAGER`, and that single claim
+ * unlocks both the management overview and this console.
+ *
+ * Signature alone is never enough — the claim is checked explicitly, because
+ * every token the app issues is signed with the same secret.
+ */
 @Injectable()
 export class AdminGuard implements CanActivate {
   constructor(private readonly jwt: JwtService) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
-    const req = context.switchToHttp().getRequest<Request & { admin?: unknown }>();
+    const req = context.switchToHttp().getRequest<Request & { admin?: TokenPayload }>();
     const header = req.headers.authorization;
 
-    // Bearer header only. The ?token= escape hatch existed for EventSource,
-    // which is gone now that the live counters poll — and tokens in query
-    // strings leak into access logs.
-    if (!header?.startsWith('Bearer ')) throw new UnauthorizedException('Missing bearer token');
-    const token = header.slice(7);
+    if (!header?.startsWith('Bearer ')) throw new UnauthorizedException('Sign in to continue.');
 
-    let payload: { role?: string };
+    let payload: TokenPayload;
     try {
-      payload = await this.jwt.verifyAsync(token);
+      payload = await this.jwt.verifyAsync<TokenPayload>(header.slice(7));
     } catch {
-      throw new UnauthorizedException('Invalid or expired token');
+      throw new UnauthorizedException('Your session has expired. Please sign in again.');
     }
 
-    // Signature alone is not enough: site-user tokens are signed with the same
-    // secret, so the audience has to be checked explicitly. Anything without
-    // the admin claim — including a registered user's token — is rejected.
-    if (payload.role !== 'admin') {
-      throw new UnauthorizedException('Admin credentials required');
+    if (payload.role !== 'user') throw new UnauthorizedException('Sign in to continue.');
+
+    if (payload.access !== UserRole.MANAGER) {
+      throw new ForbiddenException('This area is limited to management accounts.');
     }
 
     req.admin = payload;

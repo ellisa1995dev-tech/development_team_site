@@ -3,8 +3,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useState } from 'react';
-import { useAdminAuth } from '@/lib/admin-auth';
-import AdminLogin from './AdminLogin';
+import { useUserAuth } from '@/lib/user-auth';
 
 const NAV = [
   { href: '/admin', label: 'Overview', exact: true },
@@ -16,20 +15,68 @@ const NAV = [
   { href: '/admin/team', label: 'Team' },
 ];
 
+/** Shown when the visitor is signed out, or signed in without elevation. */
+function AccessGate({ isRegistered, email }: { isRegistered: boolean; email?: string }) {
+  return (
+    <div className="surface-subtle grid min-h-[70vh] place-items-center px-4 py-12">
+      <div className="w-full max-w-sm text-center">
+        <span className="mx-auto grid h-12 w-12 place-items-center rounded-2xl bg-amber-500/12 text-amber-600">
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+            <path d="M6 9V6.5a4 4 0 1 1 8 0V9" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+            <rect x="4" y="9" width="12" height="8" rx="2" stroke="currentColor" strokeWidth="1.8" />
+          </svg>
+        </span>
+
+        <h1 className="heading-3 mt-4">
+          {isRegistered ? 'Management access required' : 'Sign in to continue'}
+        </h1>
+
+        <p className="mt-2 text-sm leading-relaxed text-muted">
+          {isRegistered
+            ? `You are signed in as ${email}, which is not a management account. Ask whoever runs the deployment to add your address to ADMIN_EMAILS.`
+            : 'The console uses your normal site account. Sign in with an address that has management access.'}
+        </p>
+
+        <div className="mt-6 flex flex-col gap-2">
+          {isRegistered ? (
+            <Link href="/" className="btn-outline">
+              Back to the site
+            </Link>
+          ) : (
+            <>
+              <Link href="/login?next=/admin" className="btn-primary">
+                Sign in
+              </Link>
+              <Link href="/" className="btn-outline">
+                Back to the site
+              </Link>
+            </>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * The console runs on the ordinary site session — there is no separate admin
+ * login any more. Elevation comes from the ADMIN_EMAILS allowlist, and every
+ * /api/admin/* route checks that claim independently of what this renders.
+ */
 export default function AdminShell({ children }: { children: React.ReactNode }) {
-  const { ready, token, user, logout } = useAdminAuth();
+  const { ready, isRegistered, isManager, user } = useUserAuth();
   const pathname = usePathname();
   const [navOpen, setNavOpen] = useState(false);
 
   if (!ready) {
     return (
       <div className="grid min-h-[60vh] place-items-center">
-        <p className="text-sm text-ink-400">Loading console…</p>
+        <p className="text-sm text-faint">Loading console…</p>
       </div>
     );
   }
 
-  if (!token) return <AdminLogin />;
+  if (!isManager) return <AccessGate isRegistered={isRegistered} email={user?.email} />;
 
   const isActive = (item: (typeof NAV)[number]) =>
     item.exact ? pathname === item.href : pathname.startsWith(item.href);
@@ -54,12 +101,8 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
             <span className="text-sm font-semibold text-body">Admin console</span>
           </div>
 
-          <div className="flex items-center gap-3">
-            <span className="hidden text-xs text-faint sm:inline">{user?.email}</span>
-            <button type="button" onClick={logout} className="rounded-lg px-3 py-1.5 text-sm font-medium text-muted hover:text-body">
-              Sign out
-            </button>
-          </div>
+          {/* Sign-out lives in the site header now — one session, one control. */}
+          <span className="hidden text-xs text-faint sm:inline">{user?.email}</span>
         </div>
       </div>
 
@@ -83,7 +126,15 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
                 </Link>
               </li>
             ))}
-            <li className="mt-1 border-t border-ink-100 pt-1">
+            <li className="mt-1 border-t border-theme pt-1">
+              <Link
+                href="/management"
+                className="block rounded-xl px-3 py-2.5 text-sm font-medium text-muted hover:text-body"
+              >
+                Management overview
+              </Link>
+            </li>
+            <li>
               <Link href="/" className="block rounded-xl px-3 py-2.5 text-sm font-medium text-faint hover:text-body">
                 ← Back to site
               </Link>

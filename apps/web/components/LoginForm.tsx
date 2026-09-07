@@ -29,6 +29,8 @@ export default function LoginForm() {
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Sign in failed.';
       setError(message);
+      // Shown on every failure, so it never reveals whether a given address
+      // happens to be a console account.
       toast.error('Sign in failed', message);
     } finally {
       setSubmitting(false);
@@ -78,11 +80,16 @@ export default function LoginForm() {
         {submitting ? 'Signing in…' : 'Sign in'}
       </button>
 
-      <p className="text-center text-sm text-ink-500">
+      <p className="text-center text-sm text-muted">
         No account yet?{' '}
         <Link href={`/register?next=${encodeURIComponent(next)}`} className="font-semibold text-grass-700 underline underline-offset-2">
           Register
         </Link>
+      </p>
+
+      <p className="border-t pt-4 text-center text-xs text-faint border-theme">
+        One account for everything. Management and the admin console unlock
+        automatically for addresses with access.
       </p>
     </form>
   );

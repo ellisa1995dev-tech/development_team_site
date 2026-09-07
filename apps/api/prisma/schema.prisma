@@ -194,17 +194,7 @@ model Visit {
   @@map("visits")
 }
 
-// ---------------------------------------------------------------- admin
 
-model AdminUser {
-  id           String   @id @default(cuid())
-  email        String   @unique
-  passwordHash String   @map("password_hash")
-  name         String
-  createdAt    DateTime @default(now()) @map("created_at")
-
-  @@map("admin_users")
-}
 
 // ---------------------------------------------------------------- site users
 

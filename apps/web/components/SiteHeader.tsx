@@ -19,7 +19,10 @@ const NAV = [
  * control — /api/management/* refuses anyone without the role regardless of
  * what the navigation renders.
  */
-const MANAGEMENT_LINK = { href: '/management', label: 'Management' };
+const MANAGER_LINKS = [
+  { href: '/management', label: 'Management' },
+  { href: '/admin', label: 'Console' },
+];
 
 export default function SiteHeader() {
   const [open, setOpen] = useState(false);
@@ -76,7 +79,7 @@ export default function SiteHeader() {
         </Link>
 
         <nav className="hidden items-center gap-0.5 md:flex" aria-label="Main">
-          {(ready && isManager ? [...NAV, MANAGEMENT_LINK] : NAV).map((item) => {
+          {(ready && isManager ? [...NAV, ...MANAGER_LINKS] : NAV).map((item) => {
             const active = pathname === item.href;
             return (
               <Link
@@ -168,7 +171,7 @@ export default function SiteHeader() {
         style={{ background: 'color-mix(in srgb, var(--bg-page) 95%, transparent)' }}
       >
         <nav className="container-page flex flex-col gap-1 py-3" aria-label="Mobile">
-          {(ready && isManager ? [...NAV, MANAGEMENT_LINK] : NAV).map((item, i) => (
+          {(ready && isManager ? [...NAV, ...MANAGER_LINKS] : NAV).map((item, i) => (
             <Link
               key={item.href}
               href={item.href}

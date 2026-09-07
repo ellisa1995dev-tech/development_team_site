@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { API_URL } from '@/lib/api';
-import { useAdminAuth } from '@/lib/admin-auth';
+import { useUserAuth } from '@/lib/user-auth';
 import { useToast } from '@/components/Toast';
 import type { OrderAttachment } from '@/lib/types';
 
@@ -30,7 +30,7 @@ function iconFor(mime: string): string {
  * tab or trigger a download. The URL is revoked once the browser has taken it.
  */
 export default function AttachmentList({ orderId, attachments }: { orderId: string; attachments: OrderAttachment[] }) {
-  const { token } = useAdminAuth();
+  const { token } = useUserAuth();
   const toast = useToast();
   const [busyId, setBusyId] = useState<string | null>(null);
 
