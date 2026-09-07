@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useState } from 'react';
 import { useUserAuth } from '@/lib/user-auth';
+import LiveBadge from './LiveBadge';
 
 const NAV = [
   { href: '/admin', label: 'Overview', exact: true },
@@ -101,8 +102,11 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
             <span className="text-sm font-semibold text-body">Admin console</span>
           </div>
 
-          {/* Sign-out lives in the site header now — one session, one control. */}
-          <span className="hidden text-xs text-faint sm:inline">{user?.email}</span>
+          <div className="flex items-center gap-2">
+            <LiveBadge />
+            {/* Sign-out lives in the site header now — one session, one control. */}
+            <span className="hidden text-xs text-faint sm:inline">{user?.email}</span>
+          </div>
         </div>
       </div>
 
