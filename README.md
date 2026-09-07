@@ -28,9 +28,11 @@ npm run dev                 # API on :4000, web on :3000
 
 Then open <http://localhost:3000>. The admin console is at `/admin`.
 
-Seeded admin credentials come from `apps/api/.env` — **change `ADMIN_PASSWORD`,
-`JWT_SECRET` and `IP_HASH_SALT` before deploying anywhere.** Defaults are
-`admin@team.dev` / `change-me-now`.
+The seed creates no accounts. Register on the site, then put that address in
+`ADMIN_EMAILS` to unlock the management overview and the admin console.
+
+**Change `JWT_SECRET` and `IP_HASH_SALT` before deploying anywhere** — the
+defaults are obvious placeholders.
 
 No Docker? Point `DATABASE_URL` at any PostgreSQL 14+ instance and run
 `npx prisma db push` from `apps/api` instead of `db:migrate`.
@@ -58,6 +60,13 @@ The four main sections you asked for — **project orders, team joining, team
 introduction, services** — each have a dedicated page and a section on the landing
 page. Recruiting appears twice: as a section on `/` and as the whole of `/join`,
 including the "bring us an innovative idea" pitch box.
+
+### Contact
+
+The CTO's WhatsApp number lives in `CONTACT` in
+[content.ts](apps/web/lib/content.ts) and surfaces in the footer, the order page
+sidebar and the services CTA. Links go through `wa.me` with a pre-filled
+message, so they open the app on mobile and WhatsApp Web on desktop.
 
 ### Design
 
@@ -89,6 +98,84 @@ including the "bring us an innovative idea" pitch box.
 
 If the API is unreachable the public pages fall back to static copies of the roster
 and projects ([content.ts](apps/web/lib/content.ts)) rather than rendering empty.
+
+---
+
+## Management access
+
+A registered site user whose email is on the `ADMIN_EMAILS` allowlist gets the
+`MANAGER` role and sees a **Management** section — a read-only operations
+overview at `/management`: projects in progress with their assignees, latest
+orders and applications, and user counts. Regular users never see the link, and
+the section refuses to render for them.
+
+```
+ADMIN_EMAILS="boss@yourcompany.com,ops@yourcompany.com"
+```
+
+**Why an allowlist and not a pattern.** Nothing in this application verifies
+that someone owns the address they register with. If the role were derived from
+a pattern the visitor types — `admin@*`, or a company domain — anyone could
+sign up with a qualifying address and grant themselves access. The allowlist
+lives in the server environment, so only whoever controls the deployment can
+change it. A whole-domain entry (`@yourcompany.com`) is supported and logs a
+warning at startup, because it reintroduces exactly that risk.
+
+The role is re-evaluated on every sign-in, so adding or removing an address
+takes effect on the user's next login — in both directions.
+
+### One account system
+
+There is a single login at `/login`. Registering is ordinary; elevation comes
+from the allowlist, and one session unlocks everything it should:
+
+| Account | Gets |
+|---|---|
+| Site user | Ordering a project, applying to join |
+| Allowlisted user | The above, plus `/management` **and** the full `/admin` console |
+
+There is no separate admin password and no `admin_users` table — both were
+retired. `/api/management/*` and `/api/admin/*` each check the `MANAGER` claim
+on the signed token, so hiding a navigation link is a convenience, never the
+control.
+
+**Setting yourself up:** register on the site as normal, add that address to
+`ADMIN_EMAILS`, then sign in. The role is re-evaluated on every sign-in, so no
+re-registration is needed — and removing an address revokes access the same way.
+
+---
+
+## Order lifecycle and email
+
+Accepting an order in the console is the moment work starts, so it does three
+things at once:
+
+1. Creates a **project in progress** — status `ACTIVE`, `startedAt` set to the
+   moment of acceptance, carrying the order's stack and description across.
+2. Emails the client to say their project has been added.
+3. Links the project to the order via a unique `sourceOrderId`, so re-accepting
+   can never produce a duplicate.
+
+New projects are created with `isPublic: false`. Client work does not appear on
+the public site until someone deliberately publishes it.
+
+Archiving an order emails the client that it has been archived, making clear
+nothing was deleted.
+
+Delivery goes through Resend's HTTP API — no extra dependency and no long-lived
+socket, which matters on serverless. **With no `RESEND_API_KEY` set the API logs
+the message instead of sending it**, so local development cannot mail a real
+client by accident. Set these to turn it on:
+
+| Variable | Purpose |
+|---|---|
+| `RESEND_API_KEY` | Enables real delivery. Unset = log only |
+| `MAIL_FROM` | Sender, e.g. `StackForge <hello@yourdomain.com>` |
+| `MAIL_REPLY_TO` | Optional reply-to address |
+| `SITE_URL` | Used for links inside the emails |
+
+Notifications are best-effort: a mail failure is logged but never rolls back the
+status change the operator asked for.
 
 ---
 

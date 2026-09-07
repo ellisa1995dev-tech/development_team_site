@@ -4,7 +4,7 @@ import { useCallback, useState } from 'react';
 import { useAdminData, useAdminMutation } from '@/lib/use-admin-data';
 import { useTable } from '@/lib/use-table';
 import { useToast } from '@/components/Toast';
-import { SearchInput, SortableHeader, PlainHeader, TableCard, EmptyRow } from '@/components/admin/TableShell';
+import { SearchInput, SortableHeader, PlainHeader, TableCard, EmptyRow, Pagination } from '@/components/admin/TableShell';
 import type { TeamMember, MemberRole } from '@/lib/types';
 import { ROLE_LABEL } from '@/lib/content';
 
@@ -168,7 +168,7 @@ export default function AdminTeamPage() {
           value={table.query}
           onChange={table.setQuery}
           placeholder="Search name, role, skill, location…"
-          resultCount={table.rows.length}
+          resultCount={table.matched}
           total={table.total}
         />
 
@@ -210,7 +210,7 @@ export default function AdminTeamPage() {
 
           <tbody className="divide-theme">
             {loading ? <EmptyRow colSpan={COLUMNS} message="Loading…" /> : null}
-            {!loading && table.rows.length === 0 ? (
+            {!loading && table.matched === 0 ? (
               <EmptyRow colSpan={COLUMNS} message={table.query ? `No members match “${table.query}”.` : 'No members yet.'} />
             ) : null}
 
@@ -243,6 +243,18 @@ export default function AdminTeamPage() {
             ))}
           </tbody>
         </table>
+
+        <Pagination
+          page={table.page}
+          pageCount={table.pageCount}
+          pageSize={table.pageSize}
+          firstShown={table.firstShown}
+          lastShown={table.lastShown}
+          matched={table.matched}
+          onPage={table.setPage}
+          onPageSize={table.setPageSize}
+          noun="member"
+        />
       </TableCard>
     </div>
   );
