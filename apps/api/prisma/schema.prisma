@@ -55,22 +55,24 @@ enum ProjectStatus {
 }
 
 model Project {
-  id          String        @id @default(cuid())
-  name        String
-  slug        String        @unique
-  summary     String
-  description String?
-  status      ProjectStatus @default(ACTIVE)
-  domain      String // "AI / LLM", "Fintech", ...
-  stack       String[]      @default([])
-  clientName  String?       @map("client_name")
-  progress    Int           @default(0) // 0-100
-  featured    Boolean       @default(false)
-  isPublic    Boolean       @default(true) @map("is_public")
-  startedAt   DateTime      @map("started_at")
-  completedAt DateTime?     @map("completed_at")
-  createdAt   DateTime      @default(now()) @map("created_at")
-  updatedAt   DateTime      @updatedAt @map("updated_at")
+  id            String        @id @default(cuid())
+  name          String
+  slug          String        @unique
+  summary       String
+  description   String?
+  status        ProjectStatus @default(ACTIVE)
+  domain        String // "AI / LLM", "Fintech", ...
+  stack         String[]      @default([])
+  clientName    String?       @map("client_name")
+  progress      Int           @default(0) // 0-100
+  featured      Boolean       @default(false)
+  isPublic      Boolean       @default(true) @map("is_public")
+  startedAt     DateTime      @map("started_at")
+  completedAt   DateTime?     @map("completed_at")
+  /// The accepted order this project was created from, if any.
+  sourceOrderId String?       @unique @map("source_order_id")
+  createdAt     DateTime      @default(now()) @map("created_at")
+  updatedAt     DateTime      @updatedAt @map("updated_at")
 
   assignments ProjectAssignment[]
 

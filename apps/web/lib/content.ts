@@ -1,5 +1,23 @@
 import type { TeamMember, Project } from './types';
 
+/**
+ * Contact details. The WhatsApp number reaches the CTO directly, so it is
+ * offered for scoping conversations rather than as a general support line.
+ */
+export const CONTACT = {
+  /** E.164, digits only — the format wa.me requires. */
+  whatsappNumber: '16265862460',
+  whatsappDisplay: '+1 626 586 2460',
+  whatsappOwner: 'Adrian Kovacs',
+  whatsappRole: 'CTO',
+};
+
+/** Pre-fills the first message so the CTO gets context, not just a "hi". */
+export function whatsappLink(message?: string): string {
+  const text = message ?? 'Hi StackForge — I would like to talk about a project.';
+  return `https://wa.me/${CONTACT.whatsappNumber}?text=${encodeURIComponent(text)}`;
+}
+
 /** Single source of truth for headline numbers used across the marketing pages. */
 export const TEAM_FACTS = {
   yearsTogether: 6,

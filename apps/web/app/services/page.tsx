@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { SERVICES, ENGAGEMENT_MODELS, TEAM_FACTS } from '@/lib/content';
 import { SectionHeading, PageHero } from '@/components/ui';
+import WhatsAppLink from '@/components/WhatsAppLink';
 import Reveal from '@/components/Reveal';
 
 export const metadata: Metadata = {
@@ -116,9 +117,15 @@ export default function ServicesPage() {
           <div className="mt-12 rounded-3xl border border-grass-200 bg-gradient-to-br from-grass-50 to-sky-50 p-6 sm:p-10">
             <h2 className="heading-2">Ready to scope something?</h2>
             <p className="lede mt-3 max-w-xl">Send the brief. An engineer reads it and replies within two working days.</p>
-            <Link href="/order" className="btn-primary mt-7 w-full sm:w-auto">
-              Order a project
-            </Link>
+            <div className="mt-7 flex flex-col gap-3 sm:flex-row">
+              <Link href="/order" className="btn-primary w-full sm:w-auto">
+                Order a project
+              </Link>
+              <WhatsAppLink
+                className="w-full sm:w-auto"
+                message="Hi StackForge - I would like to scope a piece of work."
+              />
+            </div>
           </div>
         </div>
       </section>
