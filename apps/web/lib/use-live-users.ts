@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { apiFetch } from './api';
 import { useUserAuth } from './user-auth';
+import { announceFetch } from './admin-live';
 
 export interface LiveUserStats {
   registeredTotal: number;
@@ -41,6 +42,7 @@ export function useLiveUsers() {
       const next = await apiFetch<LiveUserStats>('/admin/stats/users', { token });
       setData(next);
       setStatus('live');
+      announceFetch();
     } catch {
       // Keep the last good snapshot on screen; the next tick may recover.
       setStatus('error');

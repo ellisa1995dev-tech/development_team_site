@@ -77,7 +77,6 @@ export default function ManagementDashboard() {
 
   const load = useCallback(async () => {
     if (!token) return;
-    setLoading(true);
     setError(null);
     try {
       const [o, p, ord, app] = await Promise.all([
@@ -97,9 +96,45 @@ export default function ManagementDashboard() {
     }
   }, [token]);
 
+  /**
+   * Keeps the overview current without a reload, on the same terms as the
+   * console: pause while the tab is hidden, refetch on return and on focus.
+   */
   useEffect(() => {
-    if (ready && isManager) void load();
-    else if (ready) setLoading(false);
+    if (!ready) return;
+    if (!isManager) {
+      setLoading(false);
+      return;
+    }
+
+    let timer: number | undefined;
+    const start = () => {
+      if (timer === undefined) timer = window.setInterval(load, 15_000);
+    };
+    const stop = () => {
+      if (timer !== undefined) {
+        window.clearInterval(timer);
+        timer = undefined;
+      }
+    };
+    const onVisibility = () => {
+      if (document.hidden) stop();
+      else {
+        void load();
+        start();
+      }
+    };
+
+    void load();
+    start();
+    document.addEventListener('visibilitychange', onVisibility);
+    window.addEventListener('focus', load);
+
+    return () => {
+      stop();
+      document.removeEventListener('visibilitychange', onVisibility);
+      window.removeEventListener('focus', load);
+    };
   }, [ready, isManager, load]);
 
   if (!ready) {
