@@ -1,7 +1,7 @@
-import { Body, Controller, Get, HttpCode, Post, Req, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, HttpCode, Post, Req, UseGuards } from '@nestjs/common';
 import type { Request } from 'express';
 import { UsersService } from './users.service';
-import { RegisterDto, LoginUserDto, SignupActivityDto } from './users.dto';
+import { RegisterDto, LoginUserDto, SignupActivityDto, CancelMembershipDto } from './users.dto';
 import { UserGuard, type UserTokenPayload } from './user.guard';
 
 type AuthedRequest = Request & { user?: UserTokenPayload };
@@ -33,6 +33,17 @@ export class UsersController {
   @UseGuards(UserGuard)
   heartbeat(@Req() req: AuthedRequest) {
     return this.users.heartbeat(req.user!.sub);
+  }
+
+  /**
+   * Closes the caller's own account. Requires their password again, because
+   * the action cannot be undone.
+   */
+  @Delete('me')
+  @HttpCode(200)
+  @UseGuards(UserGuard)
+  cancelMembership(@Body() dto: CancelMembershipDto, @Req() req: AuthedRequest) {
+    return this.users.cancelMembership(req.user!.sub, dto.password, dto.reason);
   }
 
   /** Public: pinged while the registration form is being filled in. */

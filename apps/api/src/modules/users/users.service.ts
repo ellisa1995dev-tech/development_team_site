@@ -5,6 +5,8 @@ import { UserRole } from '@prisma/client';
 import type { Request } from 'express';
 import { PrismaService } from '../../prisma/prisma.service';
 import { GeoIpService } from '../../common/geoip.service';
+import { MailService } from '../../common/mail.service';
+import { newRegistrationAlert, membershipCancelledAlert } from '../../common/mail.templates';
 import { getClientIp } from '../../common/client-ip';
 import { RegisterDto, LoginUserDto } from './users.dto';
 import { parseAdminEmails, hasDomainWildcard, roleForEmail } from './admin-emails';
@@ -22,6 +24,7 @@ export class UsersService implements OnModuleInit {
     private readonly prisma: PrismaService,
     private readonly jwt: JwtService,
     private readonly geoip: GeoIpService,
+    private readonly mail: MailService,
   ) {}
 
   onModuleInit() {
@@ -117,7 +120,71 @@ export class UsersService implements OnModuleInit {
         .catch(() => undefined);
     }
 
+    // Fire-and-forget: a mail problem must never fail the registration the
+    // visitor just completed. Errors surface in the logs instead.
+    void this.mail
+      .sendToAdmins((to) =>
+        newRegistrationAlert({
+          to,
+          fullName: user.fullName,
+          email: user.email,
+          company: user.company,
+          location: [user.city, user.region, user.country].filter(Boolean).join(', ') || null,
+          registeredAt: user.createdAt,
+        }),
+      )
+      .catch((err) => this.logger.error(`Registration alert failed: ${(err as Error).message}`));
+
     return { token: await this.sign(user), user: this.publicShape(user) };
+  }
+
+  /**
+   * Closes an account at the owner's request.
+   *
+   * The password is re-checked here even though the caller is already
+   * authenticated: this is irreversible, and a token left open on a shared
+   * machine should not be enough to destroy an account.
+   *
+   * Orders and applications are deliberately kept. They are business records
+   * of work the team was asked to do; the schema unlinks them (userId is set
+   * to null) rather than deleting them with the account.
+   */
+  async cancelMembership(userId: string, password: string, reason?: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      include: { _count: { select: { orders: true, applications: true } } },
+    });
+    if (!user) throw new UnauthorizedException('Account no longer exists');
+
+    const ok = await bcrypt.compare(password, user.passwordHash);
+    if (!ok) throw new UnauthorizedException('That password is not correct.');
+
+    await this.prisma.user.delete({ where: { id: userId } });
+
+    void this.mail
+      .sendToAdmins((to) =>
+        membershipCancelledAlert({
+          to,
+          fullName: user.fullName,
+          email: user.email,
+          company: user.company,
+          location: [user.city, user.region, user.country].filter(Boolean).join(', ') || null,
+          registeredAt: user.createdAt,
+          cancelledAt: new Date(),
+          reason: reason?.trim() || null,
+          ordersKept: user._count.orders,
+          applicationsKept: user._count.applications,
+        }),
+      )
+      .catch((err) => this.logger.error(`Cancellation alert failed: ${(err as Error).message}`));
+
+    this.logger.log(`Membership cancelled: ${user.email}`);
+
+    return {
+      cancelled: true,
+      ordersKept: user._count.orders,
+      applicationsKept: user._count.applications,
+    };
   }
 
   async login(dto: LoginUserDto) {

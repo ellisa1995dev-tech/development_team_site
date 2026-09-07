@@ -145,6 +145,42 @@ re-registration is needed — and removing an address revokes access the same wa
 
 ---
 
+## Administrator alerts
+
+Two events email every address in `ADMIN_EMAILS`, the moment they happen:
+
+| Event | Subject |
+|---|---|
+| Someone registers | `New registration: <name>` |
+| Someone cancels their membership | `Membership cancelled: <name>` |
+
+Each carries name, email, company, location and timestamps; the cancellation
+alert also reports how many orders and applications were retained, plus the
+reason if one was given.
+
+Mail is sent to recipients one at a time rather than as one multi-recipient
+message, so administrators never see each other's addresses and a single bad
+address cannot block the rest. Both alerts are fire-and-forget — a mail failure
+is logged but never fails the registration or cancellation that triggered it.
+
+Alerts use the same Resend configuration as the client emails, so with no
+`RESEND_API_KEY` set they are logged rather than sent.
+
+## Cancelling a membership
+
+Signed-in users manage their account at `/account`, which includes closing it.
+Because that cannot be undone, it takes three deliberate steps: open the panel,
+type `CANCEL`, and re-enter the password — which the server verifies again even
+though the caller already holds a valid token. A token left open on a shared
+machine is not enough to destroy an account.
+
+**Orders and applications are kept.** They are records of work the team was
+asked to do, so the schema unlinks them (`userId` becomes null) rather than
+deleting them with the account. The user is told this before they confirm, and
+the response reports exactly how many were retained.
+
+---
+
 ## Order lifecycle and email
 
 Accepting an order in the console is the moment work starts, so it does three

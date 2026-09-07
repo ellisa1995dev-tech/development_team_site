@@ -160,3 +160,107 @@ export function projectArchivedEmail(ctx: Omit<OrderMailContext, 'startedAt' | '
 
   return { to: ctx.email, subject: `"${ctx.projectName}" has been archived`, html, text };
 }
+
+/* ------------------------------------------------ administrator alerts */
+
+export interface AdminAlertContext {
+  to: string;
+  fullName: string;
+  email: string;
+  company?: string | null;
+  location?: string | null;
+  registeredAt: Date;
+}
+
+function stamp(d: Date): string {
+  return d.toLocaleString('en-GB', {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+    timeZone: 'UTC',
+  }) + ' UTC';
+}
+
+/** Sent to every management address the moment somebody registers. */
+export function newRegistrationAlert(ctx: AdminAlertContext): MailMessage {
+  const html = shell(
+    'A new user just registered',
+    [
+      p(`<strong>${esc(ctx.fullName)}</strong> created an account on the site.`),
+      detailRows([
+        ['Name', ctx.fullName],
+        ['Email', ctx.email],
+        ['Company', ctx.company || 'Not given'],
+        ['Location', ctx.location || 'Unknown'],
+        ['Registered', stamp(ctx.registeredAt)],
+      ]),
+      p(`They can now order a project or apply to join the team.`),
+    ].join(''),
+    { label: 'Open the console', href: `${siteUrl()}/admin/users` },
+  );
+
+  const text = [
+    `${ctx.fullName} created an account on the site.`,
+    ``,
+    `Name:       ${ctx.fullName}`,
+    `Email:      ${ctx.email}`,
+    `Company:    ${ctx.company || 'Not given'}`,
+    `Location:   ${ctx.location || 'Unknown'}`,
+    `Registered: ${stamp(ctx.registeredAt)}`,
+    ``,
+    `Console: ${siteUrl()}/admin/users`,
+  ].join('\n');
+
+  return { to: ctx.to, subject: `New registration: ${ctx.fullName}`, html, text };
+}
+
+export interface CancellationAlertContext extends AdminAlertContext {
+  cancelledAt: Date;
+  reason?: string | null;
+  ordersKept: number;
+  applicationsKept: number;
+}
+
+/** Sent to every management address the moment somebody cancels. */
+export function membershipCancelledAlert(ctx: CancellationAlertContext): MailMessage {
+  const kept =
+    ctx.ordersKept + ctx.applicationsKept === 0
+      ? 'They had not sent anything in.'
+      : `Their ${ctx.ordersKept} order(s) and ${ctx.applicationsKept} application(s) are retained, now unlinked from any account.`;
+
+  const html = shell(
+    'A user cancelled their membership',
+    [
+      p(`<strong>${esc(ctx.fullName)}</strong> has closed their account.`),
+      detailRows([
+        ['Name', ctx.fullName],
+        ['Email', ctx.email],
+        ['Company', ctx.company || 'Not given'],
+        ['Location', ctx.location || 'Unknown'],
+        ['Registered', stamp(ctx.registeredAt)],
+        ['Cancelled', stamp(ctx.cancelledAt)],
+        ['Reason', ctx.reason || 'Not given'],
+      ]),
+      p(kept),
+    ].join(''),
+    { label: 'Open the console', href: `${siteUrl()}/admin/users` },
+  );
+
+  const text = [
+    `${ctx.fullName} has closed their account.`,
+    ``,
+    `Name:       ${ctx.fullName}`,
+    `Email:      ${ctx.email}`,
+    `Company:    ${ctx.company || 'Not given'}`,
+    `Location:   ${ctx.location || 'Unknown'}`,
+    `Registered: ${stamp(ctx.registeredAt)}`,
+    `Cancelled:  ${stamp(ctx.cancelledAt)}`,
+    `Reason:     ${ctx.reason || 'Not given'}`,
+    ``,
+    kept,
+  ].join('\n');
+
+  return { to: ctx.to, subject: `Membership cancelled: ${ctx.fullName}`, html, text };
+}

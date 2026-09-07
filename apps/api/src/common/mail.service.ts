@@ -31,6 +31,33 @@ export class MailService {
     return Boolean(process.env.RESEND_API_KEY);
   }
 
+  /** Addresses that receive operational alerts — the management allowlist. */
+  private get adminRecipients(): string[] {
+    return (process.env.ADMIN_EMAILS ?? '')
+      .split(',')
+      .map((e) => e.trim())
+      .filter((e) => e && !e.startsWith('@'));
+  }
+
+  /**
+   * Fans an alert out to every management address.
+   *
+   * Sent one at a time rather than as a single multi-recipient message so the
+   * admins never see each other's addresses, and one bad address cannot stop
+   * the rest from arriving.
+   */
+  async sendToAdmins(build: (to: string) => MailMessage): Promise<{ sent: number; attempted: number }> {
+    const recipients = this.adminRecipients;
+
+    if (!recipients.length) {
+      this.logger.warn('ADMIN_EMAILS is empty — no administrator alert was sent.');
+      return { sent: 0, attempted: 0 };
+    }
+
+    const results = await Promise.all(recipients.map((to) => this.send(build(to))));
+    return { sent: results.filter((r) => r.sent).length, attempted: recipients.length };
+  }
+
   /**
    * Never throws. A failed notification must not roll back the state change
    * that triggered it — the admin's action already succeeded.
